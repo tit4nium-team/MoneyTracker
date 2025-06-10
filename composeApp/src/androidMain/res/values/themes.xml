@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MoneyTracker" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Theme.MoneyTracker.Splash" parent="Theme.MoneyTracker">
+        <item name="android:windowBackground">@color/primary</item>
+        <item name="android:icon">@drawable/ic_splash</item>
+    </style>
+</resources> 

@@ -1,0 +1,6 @@
+toml
+[versions]
+composeMultiplatformPlugin = "1.6.0"
+
+[plugins]
+composeMultiplatform = { id = "org.jetbrains.compose.multiplatform", version.ref = "composeMultiplatformPlugin" }
