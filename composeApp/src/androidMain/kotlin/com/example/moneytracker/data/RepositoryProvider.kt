@@ -5,5 +5,9 @@ actual class RepositoryProvider {
         actual fun provideTransactionRepository(): TransactionRepository {
             return FirebaseRepository()
         }
+
+        actual fun provideAuthRepository(): AuthRepository {
+            return FirebaseAuthRepository()
+        }
     }
 } 

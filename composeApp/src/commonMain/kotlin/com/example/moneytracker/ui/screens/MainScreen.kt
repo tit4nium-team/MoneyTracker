@@ -23,10 +23,12 @@ import com.example.moneytracker.viewmodel.TransactionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: TransactionViewModel) {
+fun MainScreen(
+    viewModel: TransactionViewModel,
+    onAddTransaction: () -> Unit
+) {
     val state by viewModel.state.collectAsState()
     var showFilterDialog by remember { mutableStateOf(false) }
-    var showAddTransaction by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -40,7 +42,7 @@ fun MainScreen(viewModel: TransactionViewModel) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showAddTransaction = true },
+                onClick = onAddTransaction,
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Icon(Icons.Default.Add, "Add transaction")
@@ -239,29 +241,6 @@ fun MainScreen(viewModel: TransactionViewModel) {
                     )
                 }
             }
-        }
-
-        // Add Transaction Dialog
-        if (showAddTransaction) {
-            AlertDialog(
-                onDismissRequest = { showAddTransaction = false },
-                title = { Text("Add Transaction") },
-                text = {
-                    TransactionForm(
-                        isLoading = state.isLoading,
-                        error = state.error
-                    ) { type, amount, category, description ->
-                        viewModel.addTransaction(type, amount, category, description)
-                        showAddTransaction = false
-                    }
-                },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showAddTransaction = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
         }
 
         // Filter Dialog

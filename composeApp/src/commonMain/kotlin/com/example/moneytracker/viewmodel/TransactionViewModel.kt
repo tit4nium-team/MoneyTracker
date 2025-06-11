@@ -25,7 +25,7 @@ data class TransactionState(
 
 class TransactionViewModel(
     private val repository: TransactionRepository,
-    private val userId: String = "default_user", // In a real app, get this from auth
+    private var userId: String = "default_user",
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _state = MutableStateFlow(TransactionState())
@@ -34,6 +34,11 @@ class TransactionViewModel(
     private var transactionsJob: Job? = null
 
     init {
+        observeTransactions()
+    }
+
+    fun setUserId(newUserId: String) {
+        userId = newUserId
         observeTransactions()
     }
 
