@@ -9,9 +9,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.time.LocalDateTime
-import java.time.ZoneId
-import kotlin.time.Instant
 
 class FirebaseRepository : TransactionRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -32,7 +29,8 @@ class FirebaseRepository : TransactionRepository {
                             id = doc.id,
                             type = TransactionType.valueOf(doc.getString("type") ?: return@mapNotNull null),
                             amount = doc.getDouble("amount") ?: return@mapNotNull null,
-                            category = TransactionCategory.valueOf(doc.getString("category") ?: return@mapNotNull null),
+                            category = TransactionCategory.DEFAULT_CATEGORIES.find { it.id == doc.getString("categoryId") } 
+                                ?: TransactionCategory.OTHER,
                             description = doc.getString("description") ?: "",
                             date = doc.getTimestamp("date")?.toDate()?.toString() ?: "",
                             userId = doc.getString("userId") ?: return@mapNotNull null
@@ -53,7 +51,7 @@ class FirebaseRepository : TransactionRepository {
             val data = hashMapOf(
                 "type" to transaction.type.name,
                 "amount" to transaction.amount,
-                "category" to transaction.category.name,
+                "categoryId" to transaction.category.id,
                 "description" to transaction.description,
                 "date" to com.google.firebase.Timestamp.now(),
                 "userId" to transaction.userId
@@ -80,7 +78,7 @@ class FirebaseRepository : TransactionRepository {
         val data = hashMapOf(
             "type" to transaction.type.name,
             "amount" to transaction.amount,
-            "category" to transaction.category.name,
+            "categoryId" to transaction.category.id,
             "description" to transaction.description,
             "date" to transaction.date,
             "userId" to transaction.userId
@@ -104,7 +102,7 @@ class FirebaseRepository : TransactionRepository {
     ): Result<List<Transaction>> = try {
         val snapshot = transactionsCollection
             .whereEqualTo("userId", userId)
-            .whereEqualTo("category", category.name)
+            .whereEqualTo("categoryId", category.id)
             .get()
             .await()
 
@@ -114,7 +112,8 @@ class FirebaseRepository : TransactionRepository {
                     id = doc.id,
                     type = TransactionType.valueOf(doc.getString("type") ?: return@mapNotNull null),
                     amount = doc.getDouble("amount") ?: return@mapNotNull null,
-                    category = TransactionCategory.valueOf(doc.getString("category") ?: return@mapNotNull null),
+                    category = TransactionCategory.DEFAULT_CATEGORIES.find { it.id == doc.getString("categoryId") } 
+                        ?: TransactionCategory.OTHER,
                     description = doc.getString("description") ?: "",
                     date = doc.getTimestamp("date").toString(),
                     userId = doc.getString("userId") ?: return@mapNotNull null
@@ -146,7 +145,8 @@ class FirebaseRepository : TransactionRepository {
                     id = doc.id,
                     type = TransactionType.valueOf(doc.getString("type") ?: return@mapNotNull null),
                     amount = doc.getDouble("amount") ?: return@mapNotNull null,
-                    category = TransactionCategory.valueOf(doc.getString("category") ?: return@mapNotNull null),
+                    category = TransactionCategory.DEFAULT_CATEGORIES.find { it.id == doc.getString("categoryId") } 
+                        ?: TransactionCategory.OTHER,
                     description = doc.getString("description") ?: "",
                     date = doc.getTimestamp("date").toString(),
                     userId = doc.getString("userId") ?: return@mapNotNull null

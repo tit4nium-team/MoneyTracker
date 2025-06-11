@@ -1,11 +1,13 @@
 package com.example.moneytracker.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,24 +21,35 @@ import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.util.Calculator
 import com.example.moneytracker.viewmodel.TransactionViewModel
+import com.example.moneytracker.viewmodel.CategoryViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditExpenseScreen(
     onNavigateBack: () -> Unit,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    categoryViewModel: CategoryViewModel
 ) {
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf(TransactionCategory.FOOD) }
     var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
     var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var showCategoryDialog by remember { mutableStateOf(false) }
+    var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var newCategoryName by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+    
+    val categories by categoryViewModel.categories.collectAsState()
+    var selectedCategory by remember(categories) { 
+        mutableStateOf(categories.firstOrNull() ?: TransactionCategory.OTHER) 
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (transactionType == TransactionType.EXPENSE) "Edit Expense" else "Edit Income") },
+                title = { Text(if (transactionType == TransactionType.EXPENSE) "Add Expense" else "Add Income") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -47,183 +60,195 @@ fun EditExpenseScreen(
                         onClick = {
                             try {
                                 val numericAmount = amount.toDoubleOrNull() ?: 0.0
-                                viewModel.addTransaction(
-                                    type = transactionType,
-                                    amount = numericAmount,
-                                    category = selectedCategory,
-                                    description = description.ifEmpty { selectedCategory.name }
-                                )
-                                onNavigateBack()
+                                if (numericAmount > 0) {
+                                    scope.launch {
+                                        viewModel.addTransaction(
+                                            type = transactionType,
+                                            amount = numericAmount,
+                                            category = selectedCategory,
+                                            description = description.ifEmpty { selectedCategory.name }
+                                        ).collect { result ->
+                                            result.onSuccess {
+                                                onNavigateBack()
+                                            }.onFailure { error ->
+                                                errorMessage = "Failed to save transaction"
+                                                showError = true
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    errorMessage = "Please enter a valid amount greater than 0"
+                                    showError = true
+                                }
                             } catch (e: Exception) {
+                                errorMessage = e.message ?: "An error occurred"
                                 showError = true
                             }
                         },
-                        enabled = amount.isNotEmpty()
+                        enabled = amount.isNotEmpty() && categories.isNotEmpty()
                     ) {
-                        Text("Save", color = MaterialTheme.colorScheme.primary)
+                        Text("Save")
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Transaction Type Toggle
-            SingleChoiceSegmentedButtonRow(
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                SegmentedButton(
-                    selected = transactionType == TransactionType.EXPENSE,
-                    onClick = { transactionType = TransactionType.EXPENSE },
-                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                    colors = SegmentedButtonDefaults.colors(
-                        activeContainerColor = MaterialTheme.colorScheme.primary,
-                        activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                        inactiveContainerColor = MaterialTheme.colorScheme.surface,
-                        inactiveContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                ) {
-                    Text("Expense")
-                }
-                SegmentedButton(
-                    selected = transactionType == TransactionType.INCOME,
-                    onClick = { transactionType = TransactionType.INCOME },
-                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                    colors = SegmentedButtonDefaults.colors(
-                        activeContainerColor = MaterialTheme.colorScheme.primary,
-                        activeContentColor = MaterialTheme.colorScheme.onPrimary,
-                        inactiveContainerColor = MaterialTheme.colorScheme.surface,
-                        inactiveContentColor = MaterialTheme.colorScheme.onSurface
-                    )
-                ) {
-                    Text("Income")
-                }
-            }
-
-            // Amount display
-            Text(
-                text = if (amount.isEmpty()) "0.00" else amount,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Normal,
-                modifier = Modifier.padding(vertical = 16.dp),
-                color = if (transactionType == TransactionType.INCOME) 
-                    MaterialTheme.colorScheme.primary 
-                else MaterialTheme.colorScheme.error
-            )
-
-            // Description TextField
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Description") },
+        if (categories.isEmpty()) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-            )
-
-            // Category and Date row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
             ) {
-                // Today button
-                OutlinedButton(
-                    onClick = { /* Date picker logic */ },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Transaction Type Toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Today")
+                    FilledTonalButton(
+                        onClick = { transactionType = TransactionType.EXPENSE },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (transactionType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.error 
+                            else MaterialTheme.colorScheme.surface,
+                            contentColor = if (transactionType == TransactionType.EXPENSE) 
+                                MaterialTheme.colorScheme.onError 
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("Expense")
+                    }
+                    FilledTonalButton(
+                        onClick = { transactionType = TransactionType.INCOME },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = if (transactionType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.primary 
+                            else MaterialTheme.colorScheme.surface,
+                            contentColor = if (transactionType == TransactionType.INCOME) 
+                                MaterialTheme.colorScheme.onPrimary 
+                            else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("Income")
+                    }
                 }
 
-                // Category button
-                OutlinedButton(
-                    onClick = { showCategoryDialog = true },
-                    shape = CircleShape,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.primary
-                    )
+                // Amount display
+                Text(
+                    text = "R$ ${if (amount.isEmpty()) "0.00" else amount}",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    color = if (transactionType == TransactionType.INCOME) 
+                        MaterialTheme.colorScheme.primary 
+                    else MaterialTheme.colorScheme.error
+                )
+
+                // Description TextField
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Description") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    singleLine = true
+                )
+
+                // Selected Category Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                        .height(56.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    ),
+                    onClick = { showCategoryDialog = true }
                 ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            Icons.Default.ShoppingCart,
-                            contentDescription = null
-                        )
-                        Text(selectedCategory.name)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = selectedCategory.icon?.let { Icons.Default.ShoppingCart } ?: Icons.Default.List,
+                                contentDescription = null
+                            )
+                            Text(selectedCategory.name)
+                        }
+                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // Numeric keypad
+                val buttonModifier = Modifier
+                    .size(72.dp)
+                    .padding(4.dp)
 
-            // Numeric keypad
-            val buttonModifier = Modifier
-                .size(72.dp)
-                .padding(4.dp)
-
-            // Row 1: 7-8-9
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CalculatorButton("7", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "7" }
-                CalculatorButton("8", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "8" }
-                CalculatorButton("9", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "9" }
-            }
-
-            // Row 2: 4-5-6
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CalculatorButton("4", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "4" }
-                CalculatorButton("5", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "5" }
-                CalculatorButton("6", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "6" }
-            }
-
-            // Row 3: 1-2-3
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CalculatorButton("1", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "1" }
-                CalculatorButton("2", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "2" }
-                CalculatorButton("3", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "3" }
-            }
-
-            // Row 4: 0-.-⌫
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CalculatorButton("0", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "0" }
-                CalculatorButton(".", buttonModifier, MaterialTheme.colorScheme.surface) { 
-                    if (!amount.contains(".")) amount += "." 
+                // Row 1: 7-8-9
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    CalculatorButton("7", buttonModifier) { amount += "7" }
+                    CalculatorButton("8", buttonModifier) { amount += "8" }
+                    CalculatorButton("9", buttonModifier) { amount += "9" }
                 }
-                CalculatorButton("⌫", buttonModifier, MaterialTheme.colorScheme.error) { 
-                    if (amount.isNotEmpty()) {
-                        amount = amount.dropLast(1)
+
+                // Row 2: 4-5-6
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    CalculatorButton("4", buttonModifier) { amount += "4" }
+                    CalculatorButton("5", buttonModifier) { amount += "5" }
+                    CalculatorButton("6", buttonModifier) { amount += "6" }
+                }
+
+                // Row 3: 1-2-3
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    CalculatorButton("1", buttonModifier) { amount += "1" }
+                    CalculatorButton("2", buttonModifier) { amount += "2" }
+                    CalculatorButton("3", buttonModifier) { amount += "3" }
+                }
+
+                // Row 4: 0-.-⌫
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    CalculatorButton("0", buttonModifier) { amount += "0" }
+                    CalculatorButton(".", buttonModifier) { 
+                        if (!amount.contains(".")) amount += "." 
+                    }
+                    CalculatorButton("⌫", buttonModifier, MaterialTheme.colorScheme.error) { 
+                        if (amount.isNotEmpty()) {
+                            amount = amount.dropLast(1)
+                        }
                     }
                 }
             }
@@ -234,65 +259,151 @@ fun EditExpenseScreen(
                 onDismissRequest = { showCategoryDialog = false },
                 title = { Text("Select Category") },
                 text = {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        TransactionCategory.values().forEach { category ->
-                            Surface(
-                                onClick = {
-                                    selectedCategory = category
-                                    showCategoryDialog = false
-                                },
-                                color = if (selectedCategory == category) 
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                                else MaterialTheme.colorScheme.surface,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp)
+                    Column {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(3),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(categories) { category ->
+                                CategoryItem(
+                                    category = category,
+                                    isSelected = category.id == selectedCategory.id,
+                                    onClick = {
+                                        selectedCategory = category
+                                        showCategoryDialog = false
+                                    }
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = { 
+                                showAddCategoryDialog = true
+                                showCategoryDialog = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(16.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        Icons.Default.ShoppingCart,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = category.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Add New Category")
                             }
                         }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = { showCategoryDialog = false }) {
-                        Text("Close", color = MaterialTheme.colorScheme.primary)
+                        Text("Close")
+                    }
+                }
+            )
+        }
+
+        if (showAddCategoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddCategoryDialog = false },
+                title = { Text("Add New Category") },
+                text = {
+                    OutlinedTextField(
+                        value = newCategoryName,
+                        onValueChange = { newCategoryName = it },
+                        label = { Text("Category Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (newCategoryName.isNotBlank()) {
+                                scope.launch {
+                                    categoryViewModel.addCategory(newCategoryName).collect { result ->
+                                        result.onSuccess {
+                                            showAddCategoryDialog = false
+                                            newCategoryName = ""
+                                        }.onFailure { error ->
+                                            errorMessage = "Failed to add category"
+                                            showError = true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        enabled = newCategoryName.isNotBlank()
+                    ) {
+                        Text("Add")
                     }
                 },
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                textContentColor = MaterialTheme.colorScheme.onSurface
+                dismissButton = {
+                    TextButton(onClick = { 
+                        showAddCategoryDialog = false
+                        newCategoryName = ""
+                    }) {
+                        Text("Cancel")
+                    }
+                }
             )
         }
 
         if (showError) {
             AlertDialog(
                 onDismissRequest = { showError = false },
-                title = { Text("Invalid Amount") },
-                text = { Text("Please enter a valid number.") },
+                title = { Text("Error") },
+                text = { Text(errorMessage) },
                 confirmButton = {
-                    TextButton(onClick = { showError = false }) {
-                        Text("OK", color = MaterialTheme.colorScheme.primary)
+                    TextButton(onClick = { 
+                        showError = false
+                        errorMessage = ""
+                    }) {
+                        Text("OK")
                     }
-                },
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                textContentColor = MaterialTheme.colorScheme.onSurface
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun CategoryItem(
+    category: TransactionCategory,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .aspectRatio(1f)
+            .padding(4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) 
+                MaterialTheme.colorScheme.primaryContainer 
+            else MaterialTheme.colorScheme.surface
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = category.icon?.let { Icons.Default.ShoppingCart } ?: Icons.Default.List,
+                contentDescription = null,
+                tint = if (isSelected) 
+                    MaterialTheme.colorScheme.onPrimaryContainer 
+                else MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Center,
+                color = if (isSelected) 
+                    MaterialTheme.colorScheme.onPrimaryContainer 
+                else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -302,7 +413,7 @@ fun EditExpenseScreen(
 private fun CalculatorButton(
     text: String,
     modifier: Modifier = Modifier,
-    backgroundColor: Color,
+    backgroundColor: Color = MaterialTheme.colorScheme.surface,
     onClick: () -> Unit
 ) {
     FilledTonalButton(
@@ -310,8 +421,7 @@ private fun CalculatorButton(
         modifier = modifier,
         shape = CircleShape,
         colors = ButtonDefaults.filledTonalButtonColors(
-            containerColor = backgroundColor,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = backgroundColor
         )
     ) {
         Text(

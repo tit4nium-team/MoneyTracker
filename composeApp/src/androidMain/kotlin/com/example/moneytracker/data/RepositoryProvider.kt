@@ -9,5 +9,9 @@ actual class RepositoryProvider {
         actual fun provideAuthRepository(): AuthRepository {
             return FirebaseAuthRepository()
         }
+
+        actual fun provideCategoryRepository(): CategoryRepository {
+            return FirebaseCategoryRepository()
+        }
     }
 } 

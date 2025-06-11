@@ -10,16 +10,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(
-    onSplashComplete: () -> Unit
-) {
+fun SplashScreen() {
     var startAnimation by remember { mutableStateOf(false) }
     val scale = remember { Animatable(0.0f) }
     
@@ -32,8 +28,6 @@ fun SplashScreen(
                 easing = EaseOutBounce
             )
         )
-        delay(500) // Wait for animation
-        onSplashComplete()
     }
 
     Box(

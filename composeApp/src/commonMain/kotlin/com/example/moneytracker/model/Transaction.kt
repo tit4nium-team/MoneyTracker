@@ -1,6 +1,5 @@
 package com.example.moneytracker.model
 
-
 data class Transaction(
     val id: String = "",
     val type: TransactionType,
@@ -14,7 +13,3 @@ data class Transaction(
 enum class TransactionType {
     INCOME, EXPENSE
 }
-
-enum class TransactionCategory {
-    FOOD, BILLS, ENTERTAINMENT, TRANSPORT, SHOPPING, SALARY, OTHER
-} 

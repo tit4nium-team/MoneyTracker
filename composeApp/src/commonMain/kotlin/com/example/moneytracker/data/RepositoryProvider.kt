@@ -4,5 +4,6 @@ expect class RepositoryProvider {
     companion object {
         fun provideTransactionRepository(): TransactionRepository
         fun provideAuthRepository(): AuthRepository
+        fun provideCategoryRepository(): CategoryRepository
     }
 } 
