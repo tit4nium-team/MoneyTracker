@@ -1,14 +1,10 @@
 package com.example.moneytracker.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,9 +19,6 @@ import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.util.Calculator
 import com.example.moneytracker.viewmodel.TransactionViewModel
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,24 +26,12 @@ fun EditExpenseScreen(
     onNavigateBack: () -> Unit,
     viewModel: TransactionViewModel
 ) {
-    var expression by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(TransactionCategory.FOOD) }
     var showError by remember { mutableStateOf(false) }
     var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var showCategoryDialog by remember { mutableStateOf(false) }
-    var showDatePicker by remember { mutableStateOf(false) }
-    var selectedDate by remember { mutableStateOf(getCurrentDate()) }
-
-    val displayAmount = try {
-        if (expression.isNotEmpty()) {
-            Calculator.evaluate(expression).toString()
-        } else "0"
-    } catch (e: Exception) {
-        if (expression.isNotEmpty()) {
-            expression
-        } else "0"
-    }
 
     Scaffold(
         topBar = {
@@ -65,27 +46,30 @@ fun EditExpenseScreen(
                     TextButton(
                         onClick = {
                             try {
-                                val amount = Calculator.evaluate(expression)
+                                val numericAmount = amount.toDoubleOrNull() ?: 0.0
                                 viewModel.addTransaction(
                                     type = transactionType,
-                                    amount = amount,
+                                    amount = numericAmount,
                                     category = selectedCategory,
-                                    description = description.ifEmpty { selectedCategory.name },
-                                    date = selectedDate
+                                    description = description.ifEmpty { selectedCategory.name }
                                 )
                                 onNavigateBack()
                             } catch (e: Exception) {
                                 showError = true
                             }
                         },
-                        enabled = expression.isNotEmpty()
+                        enabled = amount.isNotEmpty()
                     ) {
-                        Text("Save")
+                        Text("Save", color = MaterialTheme.colorScheme.primary)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         },
-        containerColor = Color(0xFFFAF9F6) // Light cream background
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -103,10 +87,10 @@ fun EditExpenseScreen(
                     onClick = { transactionType = TransactionType.EXPENSE },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
                     colors = SegmentedButtonDefaults.colors(
-                        activeContainerColor = Color(0xFF4A5043),
-                        activeContentColor = Color.White,
-                        inactiveContainerColor = Color.LightGray,
-                        inactiveContentColor = Color.Black
+                        activeContainerColor = MaterialTheme.colorScheme.primary,
+                        activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                        inactiveContainerColor = MaterialTheme.colorScheme.surface,
+                        inactiveContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Text("Expense")
@@ -116,19 +100,19 @@ fun EditExpenseScreen(
                     onClick = { transactionType = TransactionType.INCOME },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     colors = SegmentedButtonDefaults.colors(
-                        activeContainerColor = Color(0xFF4A5043),
-                        activeContentColor = Color.White,
-                        inactiveContainerColor = Color.LightGray,
-                        inactiveContentColor = Color.Black
+                        activeContainerColor = MaterialTheme.colorScheme.primary,
+                        activeContentColor = MaterialTheme.colorScheme.onPrimary,
+                        inactiveContainerColor = MaterialTheme.colorScheme.surface,
+                        inactiveContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 ) {
                     Text("Income")
                 }
             }
 
-            // Amount display with color based on transaction type
+            // Amount display
             Text(
-                text = if (transactionType == TransactionType.INCOME) "+$displayAmount" else "-$displayAmount",
+                text = if (amount.isEmpty()) "0.00" else amount,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Normal,
                 modifier = Modifier.padding(vertical = 16.dp),
@@ -147,8 +131,10 @@ fun EditExpenseScreen(
                     .padding(bottom = 16.dp),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF4A5043),
-                    focusedLabelColor = Color(0xFF4A5043)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             )
 
@@ -157,21 +143,15 @@ fun EditExpenseScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Date button
+                // Today button
                 OutlinedButton(
-                    onClick = { showDatePicker = true },
+                    onClick = { /* Date picker logic */ },
                     shape = CircleShape,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF4A5043) // Olive green
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.CalendarToday, contentDescription = null)
-                        Text(formatDateForDisplay(selectedDate))
-                    }
+                    Text("Today")
                 }
 
                 // Category button
@@ -179,14 +159,17 @@ fun EditExpenseScreen(
                     onClick = { showCategoryDialog = true },
                     shape = CircleShape,
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFF4A5043) // Olive green
+                        contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                        Icon(
+                            Icons.Default.ShoppingCart,
+                            contentDescription = null
+                        )
                         Text(selectedCategory.name)
                     }
                 }
@@ -194,150 +177,123 @@ fun EditExpenseScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Calculator grid
+            // Numeric keypad
             val buttonModifier = Modifier
                 .size(72.dp)
                 .padding(4.dp)
 
-            val buttonColor = Color(0xFF4A5043) // Olive green
-            val numberButtonColor = Color(0xFFE8E8E8) // Light gray
-
-            // Row 1: Operations
+            // Row 1: 7-8-9
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                CalculatorButton("(", buttonModifier, buttonColor) { expression += "(" }
-                CalculatorButton(")", buttonModifier, buttonColor) { expression += ")" }
-                CalculatorButton("-", buttonModifier, buttonColor) { expression += "-" }
-                CalculatorButton("+", buttonModifier, buttonColor) { expression += "+" }
+                CalculatorButton("7", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "7" }
+                CalculatorButton("8", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "8" }
+                CalculatorButton("9", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "9" }
             }
 
-            // Row 2: 7-8-9-÷
+            // Row 2: 4-5-6
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                CalculatorButton("7", buttonModifier, numberButtonColor) { expression += "7" }
-                CalculatorButton("8", buttonModifier, numberButtonColor) { expression += "8" }
-                CalculatorButton("9", buttonModifier, numberButtonColor) { expression += "9" }
-                CalculatorButton("÷", buttonModifier, buttonColor) { expression += "/" }
+                CalculatorButton("4", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "4" }
+                CalculatorButton("5", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "5" }
+                CalculatorButton("6", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "6" }
             }
 
-            // Row 3: 4-5-6-×
+            // Row 3: 1-2-3
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                CalculatorButton("4", buttonModifier, numberButtonColor) { expression += "4" }
-                CalculatorButton("5", buttonModifier, numberButtonColor) { expression += "5" }
-                CalculatorButton("6", buttonModifier, numberButtonColor) { expression += "6" }
-                CalculatorButton("×", buttonModifier, buttonColor) { expression += "*" }
+                CalculatorButton("1", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "1" }
+                CalculatorButton("2", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "2" }
+                CalculatorButton("3", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "3" }
             }
 
-            // Row 4: 1-2-3-⌫
+            // Row 4: 0-.-⌫
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                CalculatorButton("1", buttonModifier, numberButtonColor) { expression += "1" }
-                CalculatorButton("2", buttonModifier, numberButtonColor) { expression += "2" }
-                CalculatorButton("3", buttonModifier, numberButtonColor) { expression += "3" }
-                CalculatorButton("⌫", buttonModifier, Color(0xFFC41E3A)) { // Red color for delete
-                    if (expression.isNotEmpty()) {
-                        expression = expression.dropLast(1)
+                CalculatorButton("0", buttonModifier, MaterialTheme.colorScheme.surface) { amount += "0" }
+                CalculatorButton(".", buttonModifier, MaterialTheme.colorScheme.surface) { 
+                    if (!amount.contains(".")) amount += "." 
+                }
+                CalculatorButton("⌫", buttonModifier, MaterialTheme.colorScheme.error) { 
+                    if (amount.isNotEmpty()) {
+                        amount = amount.dropLast(1)
                     }
                 }
             }
+        }
 
-            // Row 5: 000-.-0-=
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CalculatorButton("000", buttonModifier, numberButtonColor) { expression += "000" }
-                CalculatorButton(".", buttonModifier, numberButtonColor) { expression += "." }
-                CalculatorButton("0", buttonModifier, numberButtonColor) { expression += "0" }
-                CalculatorButton("=", buttonModifier, Color(0xFFCCE5A9)) { // Light green for equals
-                    try {
-                        val result = Calculator.evaluate(expression)
-                        expression = result.toString()
-                    } catch (e: Exception) {
-                        showError = true
-                    }
-                }
-            }
-
-            if (showDatePicker) {
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    onDateSelected = { 
-                        selectedDate = it
-                        showDatePicker = false
-                    },
-                    selectedDate = selectedDate
-                )
-            }
-
-            if (showCategoryDialog) {
-                AlertDialog(
-                    onDismissRequest = { showCategoryDialog = false },
-                    title = { Text("Select Category") },
-                    text = {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            TransactionCategory.values().forEach { category ->
-                                Surface(
-                                    onClick = {
-                                        selectedCategory = category
-                                        showCategoryDialog = false
-                                    },
-                                    color = if (selectedCategory == category) 
-                                        Color(0xFF4A5043).copy(alpha = 0.1f)
-                                    else Color.Transparent,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(8.dp)
+        if (showCategoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showCategoryDialog = false },
+                title = { Text("Select Category") },
+                text = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TransactionCategory.values().forEach { category ->
+                            Surface(
+                                onClick = {
+                                    selectedCategory = category
+                                    showCategoryDialog = false
+                                },
+                                color = if (selectedCategory == category) 
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                else MaterialTheme.colorScheme.surface,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Row(
-                                        modifier = Modifier.padding(16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Default.ShoppingCart,
-                                            contentDescription = null,
-                                            tint = Color(0xFF4A5043)
-                                        )
-                                        Text(
-                                            text = category.name,
-                                            style = MaterialTheme.typography.bodyLarge
-                                        )
-                                    }
+                                    Icon(
+                                        Icons.Default.ShoppingCart,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = category.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 }
                             }
                         }
-                    },
-                    confirmButton = {
-                        TextButton(onClick = { showCategoryDialog = false }) {
-                            Text("Close")
-                        }
                     }
-                )
-            }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showCategoryDialog = false }) {
+                        Text("Close", color = MaterialTheme.colorScheme.primary)
+                    }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurface
+            )
+        }
 
-            if (showError) {
-                AlertDialog(
-                    onDismissRequest = { showError = false },
-                    title = { Text("Invalid Expression") },
-                    text = { Text("Please check your input and try again.") },
-                    confirmButton = {
-                        TextButton(onClick = { showError = false }) {
-                            Text("OK")
-                        }
+        if (showError) {
+            AlertDialog(
+                onDismissRequest = { showError = false },
+                title = { Text("Invalid Amount") },
+                text = { Text("Please enter a valid number.") },
+                confirmButton = {
+                    TextButton(onClick = { showError = false }) {
+                        Text("OK", color = MaterialTheme.colorScheme.primary)
                     }
-                )
-            }
+                },
+                containerColor = MaterialTheme.colorScheme.surface,
+                titleContentColor = MaterialTheme.colorScheme.onSurface,
+                textContentColor = MaterialTheme.colorScheme.onSurface
+            )
         }
     }
 }
@@ -355,7 +311,7 @@ private fun CalculatorButton(
         shape = CircleShape,
         colors = ButtonDefaults.filledTonalButtonColors(
             containerColor = backgroundColor,
-            contentColor = if (backgroundColor == Color(0xFF4A5043)) Color.White else Color.Black
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Text(
@@ -364,132 +320,4 @@ private fun CalculatorButton(
             textAlign = TextAlign.Center
         )
     }
-}
-
-@Composable
-private fun DatePickerDialog(
-    onDismissRequest: () -> Unit,
-    onDateSelected: (String) -> Unit,
-    selectedDate: String
-) {
-    var year by remember { mutableStateOf(selectedDate.substring(0, 4).toInt()) }
-    var month by remember { mutableStateOf(selectedDate.substring(5, 7).toInt()) }
-    var day by remember { mutableStateOf(selectedDate.substring(8, 10).toInt()) }
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Select Date") },
-        text = {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Year Selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { year-- }) {
-                        Icon(Icons.Default.KeyboardArrowLeft, null)
-                    }
-                    Text(year.toString(), style = MaterialTheme.typography.titleLarge)
-                    IconButton(onClick = { year++ }) {
-                        Icon(Icons.Default.KeyboardArrowRight, null)
-                    }
-                }
-
-                // Month Selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { if (month > 1) month-- }) {
-                        Icon(Icons.Default.KeyboardArrowLeft, null)
-                    }
-                    Text(
-                        getMonthName(month),
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    IconButton(onClick = { if (month < 12) month++ }) {
-                        Icon(Icons.Default.KeyboardArrowRight, null)
-                    }
-                }
-
-                // Day Selector
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { if (day > 1) day-- }) {
-                        Icon(Icons.Default.KeyboardArrowLeft, null)
-                    }
-                    Text(day.toString().padStart(2, '0'), style = MaterialTheme.typography.titleMedium)
-                    IconButton(onClick = { if (day < getDaysInMonth(year, month)) day++ }) {
-                        Icon(Icons.Default.KeyboardArrowRight, null)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val formattedDate = String.format("%04d-%02d-%02d", year, month, day)
-                    onDateSelected(formattedDate)
-                }
-            ) {
-                Text("OK")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-private fun getCurrentDate(): String {
-    val now = kotlinx.datetime.Clock.System.now()
-    val local = now.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
-    return String.format("%04d-%02d-%02d", local.year, local.monthNumber, local.dayOfMonth)
-}
-
-private fun formatDateForDisplay(date: String): String {
-    val year = date.substring(0, 4)
-    val month = date.substring(5, 7)
-    val day = date.substring(8, 10)
-    return "$day/${month}/${year}"
-}
-
-private fun getMonthName(month: Int): String {
-    return when (month) {
-        1 -> "Janeiro"
-        2 -> "Fevereiro"
-        3 -> "Março"
-        4 -> "Abril"
-        5 -> "Maio"
-        6 -> "Junho"
-        7 -> "Julho"
-        8 -> "Agosto"
-        9 -> "Setembro"
-        10 -> "Outubro"
-        11 -> "Novembro"
-        12 -> "Dezembro"
-        else -> ""
-    }
-}
-
-private fun getDaysInMonth(year: Int, month: Int): Int {
-    return when (month) {
-        4, 6, 9, 11 -> 30
-        2 -> if (isLeapYear(year)) 29 else 28
-        else -> 31
-    }
-}
-
-private fun isLeapYear(year: Int): Boolean {
-    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 } 

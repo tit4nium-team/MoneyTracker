@@ -26,61 +26,7 @@ sealed class Screen {
 @Composable
 @Preview
 fun App() {
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
-    val repository = remember { RepositoryProvider.provideTransactionRepository() }
-    val authRepository = remember { RepositoryProvider.provideAuthRepository() }
-    val authViewModel = remember { AuthViewModel(authRepository) }
-    val transactionViewModel = remember { TransactionViewModel(repository) }
-    val scope = rememberCoroutineScope()
-    
     MoneyTrackerTheme {
-        AnimatedContent(
-            targetState = currentScreen,
-            transitionSpec = {
-                fadeIn() with fadeOut()
-            }
-        ) { screen ->
-            when (screen) {
-                Screen.Splash -> {
-                    LaunchedEffect(Unit) {
-                        val userId = authRepository.getCurrentUserId()
-                        currentScreen = if (userId != null) {
-                            transactionViewModel.setUserId(userId)
-                            Screen.Dashboard
-                        } else {
-                            Screen.Auth
-                        }
-                    }
-                    SplashScreen(
-                        onSplashComplete = { /* Handled by LaunchedEffect */ }
-                    )
-                }
-                Screen.Auth -> {
-                    AuthScreen(
-                        viewModel = authViewModel,
-                        onAuthSuccess = {
-                            scope.launch {
-                                authRepository.getCurrentUserId()?.let { userId ->
-                                    transactionViewModel.setUserId(userId)
-                                }
-                                currentScreen = Screen.Dashboard
-                            }
-                        }
-                    )
-                }
-                Screen.Dashboard -> {
-                    DashboardScreen(
-                        viewModel = transactionViewModel,
-                        onAddTransaction = { currentScreen = Screen.EditExpense }
-                    )
-                }
-                Screen.EditExpense -> {
-                    EditExpenseScreen(
-                        onNavigateBack = { currentScreen = Screen.Dashboard },
-                        viewModel = transactionViewModel
-                    )
-                }
-            }
-        }
+        MainScreen()
     }
 }

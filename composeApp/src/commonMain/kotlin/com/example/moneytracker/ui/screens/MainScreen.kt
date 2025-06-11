@@ -20,6 +20,76 @@ import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.ui.components.TransactionForm
 import com.example.moneytracker.viewmodel.TransactionViewModel
+import com.example.moneytracker.data.RepositoryProvider
+import com.example.moneytracker.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun MainScreen() {
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
+    val repository = remember { RepositoryProvider.provideTransactionRepository() }
+    val authRepository = remember { RepositoryProvider.provideAuthRepository() }
+    val authViewModel = remember { AuthViewModel(authRepository) }
+    val transactionViewModel = remember { TransactionViewModel(repository) }
+    val scope = rememberCoroutineScope()
+
+    AnimatedContent(
+        targetState = currentScreen,
+        transitionSpec = {
+            fadeIn() with fadeOut()
+        }
+    ) { screen ->
+        when (screen) {
+            Screen.Splash -> {
+                LaunchedEffect(Unit) {
+                    val userId = authRepository.getCurrentUserId()
+                    currentScreen = if (userId != null) {
+                        transactionViewModel.setUserId(userId)
+                        Screen.Dashboard
+                    } else {
+                        Screen.Auth
+                    }
+                }
+                SplashScreen(
+                    onSplashComplete = { /* Handled by LaunchedEffect */ }
+                )
+            }
+            Screen.Auth -> {
+                AuthScreen(
+                    viewModel = authViewModel,
+                    onAuthSuccess = {
+                        scope.launch {
+                            authRepository.getCurrentUserId()?.let { userId ->
+                                transactionViewModel.setUserId(userId)
+                            }
+                            currentScreen = Screen.Dashboard
+                        }
+                    }
+                )
+            }
+            Screen.Dashboard -> {
+                DashboardScreen(
+                    viewModel = transactionViewModel,
+                    onAddTransaction = { currentScreen = Screen.EditExpense }
+                )
+            }
+            Screen.EditExpense -> {
+                EditExpenseScreen(
+                    onNavigateBack = { currentScreen = Screen.Dashboard },
+                    viewModel = transactionViewModel
+                )
+            }
+        }
+    }
+}
+
+sealed class Screen {
+    object Splash : Screen()
+    object Auth : Screen()
+    object Dashboard : Screen()
+    object EditExpense : Screen()
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
