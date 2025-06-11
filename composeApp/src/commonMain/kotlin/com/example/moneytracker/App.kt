@@ -5,6 +5,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import com.example.moneytracker.data.RepositoryProvider
 import com.example.moneytracker.ui.screens.AuthScreen
+import com.example.moneytracker.ui.screens.DashboardScreen
 import com.example.moneytracker.ui.screens.EditExpenseScreen
 import com.example.moneytracker.ui.screens.MainScreen
 import com.example.moneytracker.ui.screens.SplashScreen
@@ -17,7 +18,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 sealed class Screen {
     object Splash : Screen()
     object Auth : Screen()
-    object Main : Screen()
+    object Dashboard : Screen()
     object EditExpense : Screen()
 }
 
@@ -45,7 +46,7 @@ fun App() {
                         val userId = authRepository.getCurrentUserId()
                         currentScreen = if (userId != null) {
                             transactionViewModel.setUserId(userId)
-                            Screen.Main
+                            Screen.Dashboard
                         } else {
                             Screen.Auth
                         }
@@ -62,20 +63,20 @@ fun App() {
                                 authRepository.getCurrentUserId()?.let { userId ->
                                     transactionViewModel.setUserId(userId)
                                 }
-                                currentScreen = Screen.Main
+                                currentScreen = Screen.Dashboard
                             }
                         }
                     )
                 }
-                Screen.Main -> {
-                    MainScreen(
+                Screen.Dashboard -> {
+                    DashboardScreen(
                         viewModel = transactionViewModel,
                         onAddTransaction = { currentScreen = Screen.EditExpense }
                     )
                 }
                 Screen.EditExpense -> {
                     EditExpenseScreen(
-                        onNavigateBack = { currentScreen = Screen.Main },
+                        onNavigateBack = { currentScreen = Screen.Dashboard },
                         viewModel = transactionViewModel
                     )
                 }

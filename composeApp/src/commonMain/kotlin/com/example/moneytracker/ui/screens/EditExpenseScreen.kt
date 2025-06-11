@@ -1,10 +1,14 @@
 package com.example.moneytracker.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +23,9 @@ import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.util.Calculator
 import com.example.moneytracker.viewmodel.TransactionViewModel
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +39,8 @@ fun EditExpenseScreen(
     var showError by remember { mutableStateOf(false) }
     var transactionType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var showCategoryDialog by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedDate by remember { mutableStateOf(getCurrentDate()) }
 
     val displayAmount = try {
         if (expression.isNotEmpty()) {
@@ -61,7 +70,8 @@ fun EditExpenseScreen(
                                     type = transactionType,
                                     amount = amount,
                                     category = selectedCategory,
-                                    description = description.ifEmpty { selectedCategory.name }
+                                    description = description.ifEmpty { selectedCategory.name },
+                                    date = selectedDate
                                 )
                                 onNavigateBack()
                             } catch (e: Exception) {
@@ -147,15 +157,21 @@ fun EditExpenseScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Today button
+                // Date button
                 OutlinedButton(
-                    onClick = { /* Date picker logic */ },
+                    onClick = { showDatePicker = true },
                     shape = CircleShape,
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = Color(0xFF4A5043) // Olive green
                     )
                 ) {
-                    Text("Today")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null)
+                        Text(formatDateForDisplay(selectedDate))
+                    }
                 }
 
                 // Category button
@@ -170,18 +186,7 @@ fun EditExpenseScreen(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = when (selectedCategory) {
-                                TransactionCategory.FOOD -> Icons.Default.ShoppingCart
-                                TransactionCategory.BILLS -> Icons.Default.ShoppingCart
-                                TransactionCategory.ENTERTAINMENT -> Icons.Default.ShoppingCart
-                                TransactionCategory.TRANSPORT -> Icons.Default.ShoppingCart
-                                TransactionCategory.SHOPPING -> Icons.Default.ShoppingCart
-                                TransactionCategory.SALARY -> Icons.Default.ShoppingCart
-                                TransactionCategory.OTHER -> Icons.Default.ShoppingCart
-                            },
-                            contentDescription = null
-                        )
+                        Icon(Icons.Default.ShoppingCart, contentDescription = null)
                         Text(selectedCategory.name)
                     }
                 }
@@ -263,6 +268,17 @@ fun EditExpenseScreen(
                 }
             }
 
+            if (showDatePicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showDatePicker = false },
+                    onDateSelected = { 
+                        selectedDate = it
+                        showDatePicker = false
+                    },
+                    selectedDate = selectedDate
+                )
+            }
+
             if (showCategoryDialog) {
                 AlertDialog(
                     onDismissRequest = { showCategoryDialog = false },
@@ -289,15 +305,7 @@ fun EditExpenseScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = when (category) {
-                                                TransactionCategory.FOOD -> Icons.Default.ShoppingCart
-                                                TransactionCategory.BILLS -> Icons.Default.ShoppingCart
-                                                TransactionCategory.ENTERTAINMENT -> Icons.Default.ShoppingCart
-                                                TransactionCategory.TRANSPORT -> Icons.Default.ShoppingCart
-                                                TransactionCategory.SHOPPING -> Icons.Default.ShoppingCart
-                                                TransactionCategory.SALARY -> Icons.Default.ShoppingCart
-                                                TransactionCategory.OTHER -> Icons.Default.ShoppingCart
-                                            },
+                                            Icons.Default.ShoppingCart,
                                             contentDescription = null,
                                             tint = Color(0xFF4A5043)
                                         )
@@ -356,4 +364,132 @@ private fun CalculatorButton(
             textAlign = TextAlign.Center
         )
     }
+}
+
+@Composable
+private fun DatePickerDialog(
+    onDismissRequest: () -> Unit,
+    onDateSelected: (String) -> Unit,
+    selectedDate: String
+) {
+    var year by remember { mutableStateOf(selectedDate.substring(0, 4).toInt()) }
+    var month by remember { mutableStateOf(selectedDate.substring(5, 7).toInt()) }
+    var day by remember { mutableStateOf(selectedDate.substring(8, 10).toInt()) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Select Date") },
+        text = {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Year Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { year-- }) {
+                        Icon(Icons.Default.KeyboardArrowLeft, null)
+                    }
+                    Text(year.toString(), style = MaterialTheme.typography.titleLarge)
+                    IconButton(onClick = { year++ }) {
+                        Icon(Icons.Default.KeyboardArrowRight, null)
+                    }
+                }
+
+                // Month Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { if (month > 1) month-- }) {
+                        Icon(Icons.Default.KeyboardArrowLeft, null)
+                    }
+                    Text(
+                        getMonthName(month),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(onClick = { if (month < 12) month++ }) {
+                        Icon(Icons.Default.KeyboardArrowRight, null)
+                    }
+                }
+
+                // Day Selector
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { if (day > 1) day-- }) {
+                        Icon(Icons.Default.KeyboardArrowLeft, null)
+                    }
+                    Text(day.toString().padStart(2, '0'), style = MaterialTheme.typography.titleMedium)
+                    IconButton(onClick = { if (day < getDaysInMonth(year, month)) day++ }) {
+                        Icon(Icons.Default.KeyboardArrowRight, null)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val formattedDate = String.format("%04d-%02d-%02d", year, month, day)
+                    onDateSelected(formattedDate)
+                }
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+private fun getCurrentDate(): String {
+    val now = kotlinx.datetime.Clock.System.now()
+    val local = now.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+    return String.format("%04d-%02d-%02d", local.year, local.monthNumber, local.dayOfMonth)
+}
+
+private fun formatDateForDisplay(date: String): String {
+    val year = date.substring(0, 4)
+    val month = date.substring(5, 7)
+    val day = date.substring(8, 10)
+    return "$day/${month}/${year}"
+}
+
+private fun getMonthName(month: Int): String {
+    return when (month) {
+        1 -> "Janeiro"
+        2 -> "Fevereiro"
+        3 -> "Março"
+        4 -> "Abril"
+        5 -> "Maio"
+        6 -> "Junho"
+        7 -> "Julho"
+        8 -> "Agosto"
+        9 -> "Setembro"
+        10 -> "Outubro"
+        11 -> "Novembro"
+        12 -> "Dezembro"
+        else -> ""
+    }
+}
+
+private fun getDaysInMonth(year: Int, month: Int): Int {
+    return when (month) {
+        4, 6, 9, 11 -> 30
+        2 -> if (isLeapYear(year)) 29 else 28
+        else -> 31
+    }
+}
+
+private fun isLeapYear(year: Int): Boolean {
+    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)
 } 

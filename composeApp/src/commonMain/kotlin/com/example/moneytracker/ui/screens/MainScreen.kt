@@ -262,7 +262,7 @@ fun MainScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionItem(
+fun TransactionItem2(
     transaction: Transaction,
     onDelete: () -> Unit
 ) {
