@@ -16,6 +16,7 @@ kotlin = "2.1.21"
 ktor = "3.1.3"
 logback = "1.5.18"
 composeCompiler = "2.1.21" # Use the same version as your Kotlin version
+googleai = "0.5.0" # Or the latest version
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -33,6 +34,7 @@ logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 ktor-serverCore = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-serverTestHost = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
+generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "googleai" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -41,4 +43,6 @@ compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+buildConfig = { id = "com.github.gmazzo.buildconfig", version = "4.1.2" }
+kotlinxserialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kotlinCompose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "composeCompiler" } # Add this line

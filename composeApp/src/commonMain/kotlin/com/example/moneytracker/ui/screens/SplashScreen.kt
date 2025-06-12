@@ -13,21 +13,24 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen() {
-    var startAnimation by remember { mutableStateOf(false) }
-    val scale = remember { Animatable(0.0f) }
-    
+fun SplashScreen(
+    onTimeout: () -> Unit
+) {
+    val scale = remember { Animatable(0.5f) }
+
     LaunchedEffect(key1 = true) {
-        startAnimation = true
         scale.animateTo(
-            targetValue = 1.0f,
+            targetValue = 1f,
             animationSpec = tween(
-                durationMillis = 1000,
-                easing = EaseOutBounce
+                durationMillis = 500,
+                easing = EaseOutBack
             )
         )
+        delay(1000)
+        onTimeout()
     }
 
     Box(
@@ -42,7 +45,7 @@ fun SplashScreen() {
         ) {
             Icon(
                 imageVector = Icons.Default.Info,
-                contentDescription = "App Logo",
+                contentDescription = "Logo do App",
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .size(120.dp)
@@ -52,7 +55,7 @@ fun SplashScreen() {
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Money Tracker",
+                text = "Controle Financeiro",
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
@@ -61,7 +64,7 @@ fun SplashScreen() {
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Manage your finances wisely",
+                text = "Gerencie suas finanças com sabedoria",
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
                 fontSize = 16.sp
             )

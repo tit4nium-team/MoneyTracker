@@ -27,9 +27,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditExpenseScreen(
-    onNavigateBack: () -> Unit,
     viewModel: TransactionViewModel,
-    categoryViewModel: CategoryViewModel
+    categoryViewModel: CategoryViewModel,
+    onNavigateBack: () -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -49,10 +49,10 @@ fun EditExpenseScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (transactionType == TransactionType.EXPENSE) "Add Expense" else "Add Income") },
+                title = { Text(if (transactionType == TransactionType.EXPENSE) "Adicionar Despesa" else "Adicionar Receita") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
                     }
                 },
                 actions = {
@@ -71,23 +71,23 @@ fun EditExpenseScreen(
                                             result.onSuccess {
                                                 onNavigateBack()
                                             }.onFailure { error ->
-                                                errorMessage = "Failed to save transaction"
+                                                errorMessage = "Falha ao salvar transação"
                                                 showError = true
                                             }
                                         }
                                     }
                                 } else {
-                                    errorMessage = "Please enter a valid amount greater than 0"
+                                    errorMessage = "Por favor, insira um valor maior que 0"
                                     showError = true
                                 }
                             } catch (e: Exception) {
-                                errorMessage = e.message ?: "An error occurred"
+                                errorMessage = e.message ?: "Ocorreu um erro"
                                 showError = true
                             }
                         },
                         enabled = amount.isNotEmpty() && categories.isNotEmpty()
                     ) {
-                        Text("Save")
+                        Text("Salvar")
                     }
                 }
             )
@@ -110,7 +110,7 @@ fun EditExpenseScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Transaction Type Toggle
+                // Alternador de tipo de transação
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -129,7 +129,7 @@ fun EditExpenseScreen(
                             else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        Text("Expense")
+                        Text("Despesa")
                     }
                     FilledTonalButton(
                         onClick = { transactionType = TransactionType.INCOME },
@@ -143,13 +143,13 @@ fun EditExpenseScreen(
                             else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
-                        Text("Income")
+                        Text("Receita")
                     }
                 }
 
-                // Amount display
+                // Exibição do valor
                 Text(
-                    text = "R$ ${if (amount.isEmpty()) "0.00" else amount}",
+                    text = "R$ ${if (amount.isEmpty()) "0,00" else amount.replace(".", ",")}",
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Normal,
                     modifier = Modifier.padding(vertical = 16.dp),
@@ -158,18 +158,18 @@ fun EditExpenseScreen(
                     else MaterialTheme.colorScheme.error
                 )
 
-                // Description TextField
+                // Campo de descrição
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description") },
+                    label = { Text("Descrição") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
                     singleLine = true
                 )
 
-                // Selected Category Card
+                // Cartão de categoria selecionada
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -201,12 +201,12 @@ fun EditExpenseScreen(
                     }
                 }
 
-                // Numeric keypad
+                // Teclado numérico
                 val buttonModifier = Modifier
                     .size(72.dp)
                     .padding(4.dp)
 
-                // Row 1: 7-8-9
+                // Linha 1: 7-8-9
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -216,7 +216,7 @@ fun EditExpenseScreen(
                     CalculatorButton("9", buttonModifier) { amount += "9" }
                 }
 
-                // Row 2: 4-5-6
+                // Linha 2: 4-5-6
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -226,7 +226,7 @@ fun EditExpenseScreen(
                     CalculatorButton("6", buttonModifier) { amount += "6" }
                 }
 
-                // Row 3: 1-2-3
+                // Linha 3: 1-2-3
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
@@ -236,13 +236,13 @@ fun EditExpenseScreen(
                     CalculatorButton("3", buttonModifier) { amount += "3" }
                 }
 
-                // Row 4: 0-.-⌫
+                // Linha 4: 0-,-⌫
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     CalculatorButton("0", buttonModifier) { amount += "0" }
-                    CalculatorButton(".", buttonModifier) { 
+                    CalculatorButton(",", buttonModifier) { 
                         if (!amount.contains(".")) amount += "." 
                     }
                     CalculatorButton("⌫", buttonModifier, MaterialTheme.colorScheme.error) { 
@@ -257,7 +257,7 @@ fun EditExpenseScreen(
         if (showCategoryDialog) {
             AlertDialog(
                 onDismissRequest = { showCategoryDialog = false },
-                title = { Text("Select Category") },
+                title = { Text("Selecionar Categoria") },
                 text = {
                     Column {
                         LazyVerticalGrid(
@@ -289,14 +289,14 @@ fun EditExpenseScreen(
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Add New Category")
+                                Text("Adicionar Nova Categoria")
                             }
                         }
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = { showCategoryDialog = false }) {
-                        Text("Close")
+                        Text("Fechar")
                     }
                 }
             )
@@ -305,12 +305,12 @@ fun EditExpenseScreen(
         if (showAddCategoryDialog) {
             AlertDialog(
                 onDismissRequest = { showAddCategoryDialog = false },
-                title = { Text("Add New Category") },
+                title = { Text("Adicionar Nova Categoria") },
                 text = {
                     OutlinedTextField(
                         value = newCategoryName,
                         onValueChange = { newCategoryName = it },
-                        label = { Text("Category Name") },
+                        label = { Text("Nome da Categoria") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -325,7 +325,7 @@ fun EditExpenseScreen(
                                             showAddCategoryDialog = false
                                             newCategoryName = ""
                                         }.onFailure { error ->
-                                            errorMessage = "Failed to add category"
+                                            errorMessage = "Falha ao adicionar categoria"
                                             showError = true
                                         }
                                     }
@@ -334,7 +334,7 @@ fun EditExpenseScreen(
                         },
                         enabled = newCategoryName.isNotBlank()
                     ) {
-                        Text("Add")
+                        Text("Adicionar")
                     }
                 },
                 dismissButton = {
@@ -342,7 +342,7 @@ fun EditExpenseScreen(
                         showAddCategoryDialog = false
                         newCategoryName = ""
                     }) {
-                        Text("Cancel")
+                        Text("Cancelar")
                     }
                 }
             )
@@ -351,7 +351,7 @@ fun EditExpenseScreen(
         if (showError) {
             AlertDialog(
                 onDismissRequest = { showError = false },
-                title = { Text("Error") },
+                title = { Text("Erro") },
                 text = { Text(errorMessage) },
                 confirmButton = {
                     TextButton(onClick = { 

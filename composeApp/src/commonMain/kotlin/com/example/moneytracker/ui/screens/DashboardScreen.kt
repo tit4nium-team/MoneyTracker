@@ -10,7 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock
@@ -41,6 +43,7 @@ fun DashboardScreen(
     categoryViewModel: CategoryViewModel,
     onAddTransaction: () -> Unit,
     onNavigateToHistory: () -> Unit,
+    onNavigateToInsights: () -> Unit,
     onSignOut: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -49,103 +52,51 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsState()
     val categories by viewModel.categories.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Money Tracker") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                navigationIcon = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Monthly History") },
-                            onClick = {
-                                showMenu = false
-                                onNavigateToHistory()
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Lock, contentDescription = null)
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Sign Out") },
-                            onClick = {
-                                showMenu = false
-                                onSignOut()
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.ExitToApp, contentDescription = null)
-                            }
-                        )
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddTransaction,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        // Balance Card - Always visible
+        BalanceCard(state = state)
+
+        // Tabs
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary,
+            indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-        },
-        containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
         ) {
-            // Balance Card - Always visible
-            BalanceCard(state = state)
-
-            // Tabs
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.primary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = { Text(title) },
-                        selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            }
-
-            // Tab content
-            when (selectedTabIndex) {
-                0 -> CategoryBreakdownTab(state = state, categories = categories)
-                1 -> TransactionsTab(
-                    transactions = state.transactions,
-                    categories = categories,
-                    viewModel = viewModel,
-                    categoryViewModel = categoryViewModel,
-                    onDeleteTransaction = { viewModel.deleteTransaction(it) },
-                    modifier = Modifier.fillMaxSize()
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
             }
         }
+
+        // Tab content
+        when (selectedTabIndex) {
+            0 -> CategoryBreakdownTab(state = state, categories = categories)
+            1 -> TransactionsTab(
+                transactions = state.transactions,
+                categories = categories,
+                viewModel = viewModel,
+                categoryViewModel = categoryViewModel,
+                onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
+
 
 @Composable
 private fun CategoryBreakdownTab(
@@ -158,7 +109,7 @@ private fun CategoryBreakdownTab(
         state.transactions
             .filter { it.type == TransactionType.EXPENSE }
             .groupBy { it.category }
-            .mapValues { (_, transactions) -> 
+            .mapValues { (_, transactions) ->
                 transactions.sumOf { it.amount }
             }
     }
@@ -181,18 +132,45 @@ private fun CategoryBreakdownTab(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Text(
-                    text = "Category Breakdown",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                categoryTotals.forEach { (category, amount) ->
-                    CategoryProgressItem(
-                        category = category,
-                        amount = amount,
-                        totalExpenses = state.totalExpenses
+                if (categoryTotals.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                            Text(
+                                text = "Nenhuma transação registrada ainda",
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        text = "Divisão por categoria",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
+
+                    categoryTotals.forEach { (category, amount) ->
+                        CategoryProgressItem(
+                            category = category,
+                            amount = amount,
+                            totalExpenses = state.totalExpenses
+                        )
+                    }
                 }
             }
         }
@@ -270,7 +248,7 @@ fun TransactionsTab(
                     )
                 )
             }
-            
+
             items(categories) { category ->
                 FilterChip(
                     selected = selectedCategory?.id == category.id,
@@ -288,7 +266,7 @@ fun TransactionsTab(
                     trailingIcon = if (category.isCustom) {
                         {
                             IconButton(
-                                onClick = { 
+                                onClick = {
                                     scope.launch {
                                         categoryViewModel.deleteCategory(category.id)
                                     }
@@ -357,9 +335,9 @@ fun TransactionsTab(
                     )
                     Text(
                         text = if (selectedCategory != null)
-                            "No transactions found for ${selectedCategory.toString()}"
+                            "Nenhuma transação encontrada para ${selectedCategory.toString()}"
                         else
-                            "No transactions recorded yet",
+                            "Nenhuma transação registrada ainda",
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -387,12 +365,12 @@ fun TransactionsTab(
     if (showAddCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showAddCategoryDialog = false },
-            title = { Text("Add New Category") },
+            title = { Text("Adicionar Nova Categoria") },
             text = {
                 OutlinedTextField(
                     value = categoryName,
                     onValueChange = { categoryName = it },
-                    label = { Text("Category Name") },
+                    label = { Text("Nome da Categoria") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -415,15 +393,15 @@ fun TransactionsTab(
                     },
                     enabled = categoryName.isNotBlank()
                 ) {
-                    Text("Add")
+                    Text("Adicionar")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     showAddCategoryDialog = false
                     categoryName = ""
                 }) {
-                    Text("Cancel")
+                    Text("Cancelar")
                 }
             }
         )
@@ -432,8 +410,8 @@ fun TransactionsTab(
     if (showError) {
         AlertDialog(
             onDismissRequest = { showError = false },
-            title = { Text("Error") },
-            text = { Text("Failed to add category. Please try again.") },
+            title = { Text("Erro") },
+            text = { Text("Falha ao adicionar categoria. Por favor, tente novamente.") },
             confirmButton = {
                 TextButton(onClick = { showError = false }) {
                     Text("OK")
@@ -496,8 +474,8 @@ fun TransactionItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Transaction") },
-            text = { Text("Are you sure you want to delete this transaction?") },
+            title = { Text("Excluir Transação") },
+            text = { Text("Tem certeza que deseja excluir esta transação?") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -505,12 +483,12 @@ fun TransactionItem(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Excluir", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = MaterialTheme.colorScheme.primary)
+                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -538,7 +516,7 @@ private fun BalanceCard(state: TransactionState) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Total Balance",
+                text = "Saldo Total",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )

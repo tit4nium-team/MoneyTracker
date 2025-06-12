@@ -51,7 +51,7 @@ fun AuthScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (isSignUp) "Create Account" else "Welcome Back",
+            text = if (isSignUp) "Criar Conta" else "Bem-vindo de Volta",
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 32.dp)
         )
@@ -59,7 +59,7 @@ fun AuthScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text("E-mail") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
@@ -73,7 +73,7 @@ fun AuthScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text("Senha") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -102,7 +102,7 @@ fun AuthScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             } else {
-                Text(if (isSignUp) "Sign Up" else "Sign In")
+                Text(if (isSignUp) "Cadastrar" else "Entrar")
             }
         }
 
@@ -110,14 +110,14 @@ fun AuthScreen(
             onClick = { isSignUp = !isSignUp },
             modifier = Modifier.padding(top = 8.dp)
         ) {
-            Text(if (isSignUp) "Already have an account? Sign In" else "Don't have an account? Sign Up")
+            Text(if (isSignUp) "Já tem uma conta? Entre" else "Não tem uma conta? Cadastre-se")
         }
     }
 
     if (showError) {
         AlertDialog(
             onDismissRequest = { showError = false },
-            title = { Text("Error") },
+            title = { Text("Erro") },
             text = { Text(errorMessage) },
             confirmButton = {
                 TextButton(onClick = { showError = false }) {

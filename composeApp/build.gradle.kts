@@ -1,12 +1,9 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.compose)
     alias(libs.plugins.kotlinCompose)
+    alias(libs.plugins.kotlinxserialization)
     id("com.google.gms.google-services")
 }
 
@@ -58,6 +55,10 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
+                implementation(libs.generativeai)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
+                implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
             }
         }
         commonTest.dependencies {
@@ -77,7 +78,7 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
-    
+
     buildFeatures {
         buildConfig = true
     }
@@ -90,12 +91,14 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         getByName("debug") {
             // Add Firebase configuration for debug
             buildConfigField("String", "FIREBASE_PROJECT_ID", "\"moneytracker-5508d\"") // Replace with your project ID
             buildConfigField("String", "FIREBASE_APP_ID", "\"1:534125893092:android:c6a74d7202b54b34fa23f1\"") // Replace with your app ID
             buildConfigField("String", "FIREBASE_API_KEY", "\"AIzaSyBL1j9F1_ctko5TgFMh8bAbGiTe2t6B_H0\"") // Replace with your API key
+            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("AIzaSyCekWzR9iJ5ND4soW-HHFcF69o7jezFCOs") ?: ""}\"")
         }
     }
     compileOptions {

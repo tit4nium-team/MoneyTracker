@@ -49,13 +49,14 @@ class AuthViewModel(
     }
 
     fun signOut() {
+        _state.value = AuthState.Loading
         scope.launch {
             repository.signOut()
                 .onSuccess {
                     _state.value = AuthState.Initial
                 }
                 .onFailure { error ->
-                    _state.value = AuthState.Error(error.message ?: "Sign out failed")
+                    _state.value = AuthState.Error(error.message ?: "Erro ao fazer logout")
                 }
         }
     }
