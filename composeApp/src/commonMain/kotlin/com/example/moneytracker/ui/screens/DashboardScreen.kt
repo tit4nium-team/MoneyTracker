@@ -52,47 +52,60 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsState()
     val categories by viewModel.categories.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Balance Card - Always visible
-        BalanceCard(state = state)
-
-        // Tabs
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.primary,
-            indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = { Text(title) },
-                    selectedContentColor = MaterialTheme.colorScheme.primary,
-                    unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onAddTransaction,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
             }
         }
+    ) {
 
-        // Tab content
-        when (selectedTabIndex) {
-            0 -> CategoryBreakdownTab(state = state, categories = categories)
-            1 -> TransactionsTab(
-                transactions = state.transactions,
-                categories = categories,
-                viewModel = viewModel,
-                categoryViewModel = categoryViewModel,
-                onDeleteTransaction = { viewModel.deleteTransaction(it) },
-                modifier = Modifier.fillMaxSize()
-            )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            // Balance Card - Always visible
+            BalanceCard(state = state)
+
+            // Tabs
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title) },
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
+
+            // Tab content
+            when (selectedTabIndex) {
+                0 -> CategoryBreakdownTab(state = state, categories = categories)
+                1 -> TransactionsTab(
+                    transactions = state.transactions,
+                    categories = categories,
+                    viewModel = viewModel,
+                    categoryViewModel = categoryViewModel,
+                    onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
