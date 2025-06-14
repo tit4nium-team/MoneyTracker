@@ -12,6 +12,7 @@ val BackgroundBlack = Color(0xFF121212)
 val SurfaceBlack = Color(0xFF1E1E1E)
 val White = Color(0xFFFFFFFF)
 val Gray = Color(0xFF2F2F2F)
+val ErrorRed = Color(0xFFFF3B30) // Vibrant error red
 
 private val DarkColorScheme = darkColorScheme(
     primary = NeonGreen,
@@ -24,23 +25,31 @@ private val DarkColorScheme = darkColorScheme(
     surface = SurfaceBlack,
     onBackground = White,
     onSurface = White,
-    error = Color(0xFFFF5252),
-    onError = White
+    surfaceVariant = Gray,
+    onSurfaceVariant = White.copy(alpha = 0.7f),
+    error = ErrorRed,
+    onError = White,
+    errorContainer = ErrorRed.copy(alpha = 0.1f),
+    onErrorContainer = ErrorRed
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = DarkGreen,
-    onPrimary = White,
-    primaryContainer = NeonGreen,
-    onPrimaryContainer = DarkGreen,
+private val LightColorScheme = darkColorScheme( // Force dark theme for consistent neon look
+    primary = NeonGreen,
+    onPrimary = BackgroundBlack,
+    primaryContainer = NeonGreen.copy(alpha = 0.1f),
+    onPrimaryContainer = NeonGreen,
     secondary = NeonGreen,
-    onSecondary = DarkGreen,
-    background = Color(0xFFF5F5F5),
-    surface = White,
-    onBackground = DarkGreen,
-    onSurface = DarkGreen,
-    error = Color(0xFFB00020),
-    onError = White
+    onSecondary = BackgroundBlack,
+    background = BackgroundBlack,
+    surface = SurfaceBlack,
+    onBackground = White,
+    onSurface = White,
+    surfaceVariant = Gray,
+    onSurfaceVariant = White.copy(alpha = 0.7f),
+    error = ErrorRed,
+    onError = White,
+    errorContainer = ErrorRed.copy(alpha = 0.1f),
+    onErrorContainer = ErrorRed
 )
 
 @Composable

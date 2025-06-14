@@ -13,5 +13,9 @@ actual class RepositoryProvider {
         actual fun provideCategoryRepository(): CategoryRepository {
             return FirebaseCategoryRepository()
         }
+
+        actual fun provideBudgetRepository(): BudgetRepository {
+            return FirebaseBudgetRepository()
+        }
     }
 } 

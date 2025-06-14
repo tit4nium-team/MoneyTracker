@@ -67,6 +67,14 @@ fun MainScreen(
                     }
                 )
                 DropdownMenuItem(
+                    text = { Text("Orçamento") },
+                    leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
+                    onClick = {
+                        showMenu = false
+                        onNavigate(Screen.Budget.route)
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text("Configurações") },
                     leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
                     onClick = {

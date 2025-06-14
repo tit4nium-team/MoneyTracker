@@ -14,6 +14,7 @@ import com.example.moneytracker.viewmodel.AuthViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.InsightsViewModel
+import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -25,6 +26,7 @@ sealed class Screen(val route: String) {
     object MonthlyHistory : Screen("monthly_history")
     object Insights : Screen("insights")
     object Settings : Screen("settings")
+    object Budget : Screen("budget")
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -39,6 +41,7 @@ fun App() {
     val categoryViewModel = remember { CategoryViewModel(categoryRepository) }
     val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel) }
     val insightsViewModel = remember { InsightsViewModel() }
+    val budgetViewModel = remember { BudgetViewModel() }
     val scope = rememberCoroutineScope()
     val authState by authViewModel.state.collectAsState()
 
@@ -116,6 +119,7 @@ fun App() {
                                 Screen.MonthlyHistory.route -> currentScreen = Screen.MonthlyHistory
                                 Screen.Insights.route -> currentScreen = Screen.Insights
                                 Screen.Settings.route -> {} // Implementar tela de configurações
+                                Screen.Budget.route -> currentScreen = Screen.Budget
                             }
                         }
                     )
@@ -137,6 +141,12 @@ fun App() {
                     InsightsScreen(
                         state = transactionViewModel.state.collectAsState().value,
                         insightsViewModel = insightsViewModel,
+                        onNavigateBack = { currentScreen = Screen.Dashboard }
+                    )
+                }
+                Screen.Budget -> {
+                    BudgetScreen(
+                        viewModel = budgetViewModel,
                         onNavigateBack = { currentScreen = Screen.Dashboard }
                     )
                 }

@@ -18,6 +18,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import com.example.moneytracker.util.getCurrentMonthStart
+import com.example.moneytracker.util.formatDate
 
 data class TransactionState(
     val transactions: List<Transaction> = emptyList(),
@@ -31,12 +33,14 @@ data class TransactionState(
 class TransactionViewModel(
     private val repository: TransactionRepository,
     private val categoryViewModel: CategoryViewModel,
+    private val budgetViewModel: BudgetViewModel = BudgetViewModel(),
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _state = MutableStateFlow(TransactionState())
     val state: StateFlow<TransactionState> = _state.asStateFlow()
 
     val categories = categoryViewModel.categories
+    val budgets = budgetViewModel.budgets
 
     private var transactionsJob: Job? = null
     private var userId: String? = null
@@ -44,7 +48,26 @@ class TransactionViewModel(
     fun setUserId(id: String) {
         userId = id
         categoryViewModel.setUserId(id)
+        budgetViewModel.setUserId(id)
         loadTransactions()
+    }
+
+    private suspend fun checkBudgetExceeded(
+        category: TransactionCategory,
+        amount: Double
+    ): Boolean {
+        val budget = budgets.value.find { it.category.id == category.id } ?: return false
+        val monthStart = getCurrentMonthStart()
+        
+        val monthlySpent = state.value.transactions
+            .filter { transaction ->
+                transaction.category.id == category.id &&
+                transaction.type == TransactionType.EXPENSE &&
+                transaction.date.startsWith(formatDate(monthStart).substring(0, 7))
+            }
+            .sumOf { it.amount }
+
+        return monthlySpent + amount > budget.amount
     }
 
     fun addTransaction(
@@ -54,6 +77,13 @@ class TransactionViewModel(
         description: String
     ): Flow<Result<Unit>> = callbackFlow {
         userId?.let { uid ->
+            if (type == TransactionType.EXPENSE) {
+                val budgetExceeded = checkBudgetExceeded(category, amount)
+                if (budgetExceeded) {
+                    _state.update { it.copy(error = "Atenção: Esta transação excederá o orçamento da categoria ${category.name}") }
+                }
+            }
+
             val transaction = Transaction(
                 id = "transaction_${Clock.System.now().toEpochMilliseconds()}",
                 amount = amount,

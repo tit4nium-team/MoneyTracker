@@ -5,5 +5,6 @@ expect class RepositoryProvider {
         fun provideTransactionRepository(): TransactionRepository
         fun provideAuthRepository(): AuthRepository
         fun provideCategoryRepository(): CategoryRepository
+        fun provideBudgetRepository(): BudgetRepository
     }
 } 
