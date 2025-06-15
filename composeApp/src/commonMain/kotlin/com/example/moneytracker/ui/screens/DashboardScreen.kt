@@ -1,5 +1,8 @@
 package com.example.moneytracker.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,22 +12,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,6 +33,11 @@ import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -532,79 +533,130 @@ fun TransactionItem(
 
 @Composable
 private fun BalanceCard(state: TransactionState) {
+    var showBalance by remember { mutableStateOf(false) }
+    val animatedProgress by animateFloatAsState(
+        targetValue = if (showBalance) 1f else 0f,
+        animationSpec = tween(1000)
+    )
+
+    LaunchedEffect(Unit) {
+        showBalance = true
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Saldo Total",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             Text(
                 text = "R$ ${String.format("%.2f", state.balance)}",
-                style = MaterialTheme.typography.headlineLarge,
-                color = if (state.balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (state.balance >= 0) 
+                    MaterialTheme.colorScheme.primary 
+                else MaterialTheme.colorScheme.error,
+                modifier = Modifier.alpha(animatedProgress)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "Income",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "R$ ${String.format("%.2f", state.totalIncome)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = "Expenses",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "R$ ${String.format("%.2f", state.totalExpenses)}",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
+                BalanceItem(
+                    icon = Icons.Default.Add,
+                    label = "Receitas",
+                    value = state.totalIncome,
+                    color = MaterialTheme.colorScheme.primary,
+                    progress = animatedProgress
+                )
+                
+                Box(
+                    modifier = Modifier
+                        .height(50.dp)
+                        .width(1.dp)
+                        .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+                )
+                
+                BalanceItem(
+                    icon = Icons.Default.Delete,
+                    label = "Despesas",
+                    value = state.totalExpenses,
+                    color = MaterialTheme.colorScheme.error,
+                    progress = animatedProgress
+                )
             }
         }
     }
+}
+
+@Composable
+private fun BalanceItem(
+    icon: ImageVector,
+    label: String,
+    value: Double,
+    color: Color,
+    progress: Float
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.alpha(progress)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(28.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        
+        Text(
+            text = "R$ ${String.format("%.2f", value)}",
+            style = MaterialTheme.typography.titleMedium,
+            color = color,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun VerticalDivider(
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.onPrimaryContainer
+) {
+    Box(
+        modifier = modifier
+            .width(1.dp)
+            .background(color)
+    )
 }
 
 @Composable
@@ -685,12 +737,22 @@ private fun BudgetOverviewCard(
     val isOverBudget = totalSpent > budget.amount
     val remaining = budget.amount - totalSpent
 
+    var showDetails by remember { mutableStateOf(false) }
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress.toFloat(),
+        animationSpec = tween(1000)
+    )
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { showDetails = !showDetails },
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.onSurface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -702,10 +764,20 @@ private fun BudgetOverviewCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = budget.category.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = budget.category.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
                 Text(
                     text = "R$ ${String.format("%.2f", budget.amount)}",
                     style = MaterialTheme.typography.titleMedium,
@@ -713,59 +785,92 @@ private fun BudgetOverviewCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             LinearProgressIndicator(
-                progress = progress.toFloat(),
+                progress = animatedProgress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                color = when {
+                    isOverBudget -> MaterialTheme.colorScheme.error
+                    progress > 0.9 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                    progress > 0.7 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    else -> MaterialTheme.colorScheme.primary
+                },
                 trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = "Gasto",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = "R$ ${String.format("%.2f", totalSpent)}",
-                        style = MaterialTheme.typography.bodyLarge,
+            if (showDetails) {
+                Column(modifier = Modifier.padding(top = 16.dp)) {
+                    BudgetDetailRow(
+                        label = "Gasto",
+                        value = totalSpent,
                         color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
-                }
-
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "Restante",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    BudgetDetailRow(
+                        label = "Restante",
+                        value = remaining,
+                        color = when {
+                            isOverBudget -> MaterialTheme.colorScheme.error
+                            remaining < budget.amount * 0.2 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                            remaining < budget.amount * 0.3 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            else -> MaterialTheme.colorScheme.primary
+                        }
                     )
-                    Text(
-                        text = "R$ ${String.format("%.2f", remaining)}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
 
-            if (isOverBudget) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Orçamento excedido em R$ ${String.format("%.2f", -remaining)}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
+                    if (isOverBudget) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Orçamento excedido em R$ ${String.format("%.2f", -remaining)}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun BudgetDetailRow(
+    label: String,
+    value: Double,
+    color: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        )
+        Text(
+            text = "R$ ${String.format("%.2f", value)}",
+            style = MaterialTheme.typography.bodyLarge,
+            color = color,
+            fontWeight = FontWeight.Medium
+        )
     }
 } 

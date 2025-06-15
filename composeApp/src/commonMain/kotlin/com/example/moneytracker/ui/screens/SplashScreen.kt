@@ -4,11 +4,12 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,17 +20,25 @@ import kotlinx.coroutines.delay
 fun SplashScreen(
     onTimeout: () -> Unit
 ) {
-    val scale = remember { Animatable(0.5f) }
+    var startAnimation by remember { mutableStateOf(false) }
+    val scale = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0.3f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = EaseOutBack
+        )
+    )
+    val alpha = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = LinearEasing
+        )
+    )
 
     LaunchedEffect(key1 = true) {
-        scale.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 500,
-                easing = EaseOutBack
-            )
-        )
-        delay(1000)
+        startAnimation = true
+        delay(2000)
         onTimeout()
     }
 
@@ -41,32 +50,33 @@ fun SplashScreen(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.scale(scale.value)
         ) {
             Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = "Logo do App",
+                imageVector = Icons.Default.Add,
+                contentDescription = "Money Tracker Logo",
                 tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier
-                    .size(120.dp)
-                    .scale(scale.value)
+                modifier = Modifier.size(120.dp)
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "Controle Financeiro",
+                text = "Money Tracker",
                 color = MaterialTheme.colorScheme.onPrimary,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.alpha(alpha.value)
             )
             
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Gerencie suas finanças com sabedoria",
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
-                fontSize = 16.sp
+                text = "Controle suas finanças com facilidade",
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                fontSize = 16.sp,
+                modifier = Modifier.alpha(alpha.value)
             )
         }
     }
