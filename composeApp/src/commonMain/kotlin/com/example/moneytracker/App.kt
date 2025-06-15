@@ -27,6 +27,7 @@ sealed class Screen(val route: String) {
     object Insights : Screen("insights")
     object Settings : Screen("settings")
     object Budget : Screen("budget")
+    // Assuming ConfigurationScreen uses "settings" route via Screen.Settings
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -37,15 +38,17 @@ fun App() {
     val repository = remember { RepositoryProvider.provideTransactionRepository() }
     val authRepository = remember { RepositoryProvider.provideAuthRepository() }
     val categoryRepository = remember { RepositoryProvider.provideCategoryRepository() }
+    val configurationRepository = remember { RepositoryProvider.provideConfigurationRepository() } // Added
     val authViewModel = remember { AuthViewModel(authRepository) }
     val categoryViewModel = remember { CategoryViewModel(categoryRepository) }
     val insightsViewModel = remember { InsightsViewModel() }
-    val budgetViewModel = remember { 
+    val configurationViewModel = remember { ConfigurationViewModel(configurationRepository) } // Added
+    val budgetViewModel = remember {
         BudgetViewModel(
             repository = RepositoryProvider.provideBudgetRepository(),
             categoryRepository = RepositoryProvider.provideCategoryRepository(),
             transactionRepository = RepositoryProvider.provideTransactionRepository()
-        ) 
+        )
     }
     val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel, budgetViewModel) }
     val scope = rememberCoroutineScope()
@@ -125,7 +128,7 @@ fun App() {
                                 Screen.EditExpense.route -> currentScreen = Screen.EditExpense
                                 Screen.MonthlyHistory.route -> currentScreen = Screen.MonthlyHistory
                                 Screen.Insights.route -> currentScreen = Screen.Insights
-                                Screen.Settings.route -> {} // Implementar tela de configurações
+                                Screen.Settings.route -> currentScreen = Screen.Settings // Navigate to Settings
                                 Screen.Budget.route -> currentScreen = Screen.Budget
                             }
                         }
@@ -157,7 +160,12 @@ fun App() {
                         onNavigateBack = { currentScreen = Screen.Dashboard }
                     )
                 }
-                Screen.Settings -> {} // Implementar tela de configurações
+                Screen.Settings -> { // Implement ConfigurationScreen for Settings route
+                    ConfigurationScreen(
+                        viewModel = configurationViewModel,
+                        onNavigateBack = { currentScreen = Screen.Dashboard }
+                    )
+                }
             }
         }
     }

@@ -5,4 +5,5 @@ sealed class Screen {
     object EditExpense : Screen()
     object MonthlyHistory : Screen()
     object Insights : Screen()
+    object Configuration : Screen()
 } 

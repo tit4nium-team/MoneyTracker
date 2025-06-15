@@ -41,6 +41,7 @@ kotlin {
                 implementation("com.google.firebase:firebase-firestore-ktx")
                 implementation("com.google.firebase:firebase-analytics-ktx")
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
+                implementation("androidx.datastore:datastore-preferences:1.0.0")
             }
         }
         val commonMain by getting {
@@ -64,6 +65,24 @@ kotlin {
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+        }
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
+                implementation("org.robolectric:robolectric:4.10.3")
+                implementation("org.mockito:mockito-core:5.4.0")
+                implementation("org.mockito:mockito-junit-jupiter:5.4.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation("androidx.datastore:datastore-preferences-core:1.0.0")
+            }
+        }
+        val iosTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+            }
         }
     }
 }
@@ -105,6 +124,19 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    sourceSets {
+        getByName("test") {
+            java.srcDirs("src/test/java", "src/test/kotlin")
+        }
+        getByName("androidTest") {
+            java.srcDirs("src/androidTest/java", "src/androidTest/kotlin")
+        }
+        create("androidUnitTest") {
+            java.srcDirs("src/androidUnitTest/java", "src/androidUnitTest/kotlin")
+            // resources.srcDirs("src/androidUnitTest/res") // Uncomment if resources are needed
+        }
     }
 }
 
