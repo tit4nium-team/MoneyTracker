@@ -99,16 +99,40 @@ class BudgetViewModel(
         }
     }
 
-    fun createBudget(category: TransactionCategory, amount: Double, month: Int, year: Int) {
+    fun createBudget(
+        category: TransactionCategory,
+        amount: Double,
+        month: Int,
+        year: Int,
+        replicateForAllMonths: Boolean = false
+    ) {
         viewModelScope.launch {
-            val budget = Budget(
-                userId = userId,
-                category = category,
-                amount = amount,
-                month = month,
-                year = year
-            )
-            repository.createBudget(budget)
+            if (replicateForAllMonths) {
+                // Criar orçamentos para todos os meses do ano
+                (0..11).forEach { monthIndex ->
+                    val budget = Budget(
+                        userId = userId,
+                        category = category,
+                        amount = amount,
+                        month = monthIndex,
+                        year = year
+                    )
+                    repository.createBudget(budget)
+                }
+            } else {
+                // Criar orçamento apenas para o mês selecionado
+                val budget = Budget(
+                    userId = userId,
+                    category = category,
+                    amount = amount,
+                    month = month,
+                    year = year
+                )
+                repository.createBudget(budget)
+            }
+            
+            // Recarrega os orçamentos do mês atual após criar
+            loadBudgets(month, year)
         }
     }
 

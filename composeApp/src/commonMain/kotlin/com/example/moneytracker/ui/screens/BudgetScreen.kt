@@ -1,9 +1,11 @@
 package com.example.moneytracker.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -56,12 +58,7 @@ fun BudgetScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                }
             )
         },
         floatingActionButton = {
@@ -324,8 +321,8 @@ fun BudgetScreen(
         AddBudgetDialog(
             categories = categories,
             onDismiss = { showAddDialog = false },
-            onConfirm = { category, amount ->
-                viewModel.createBudget(category, amount, selectedMonth.ordinal, selectedYear)
+            onConfirm = { category, amount, replicateForAllMonths ->
+                viewModel.createBudget(category, amount, selectedMonth.ordinal, selectedYear, replicateForAllMonths)
                 showAddDialog = false
             }
         )
@@ -441,75 +438,243 @@ private fun BudgetCard(
 private fun AddBudgetDialog(
     categories: List<TransactionCategory>,
     onDismiss: () -> Unit,
-    onConfirm: (TransactionCategory, Double) -> Unit
+    onConfirm: (TransactionCategory, Double, Boolean) -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
     var amount by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
+    var replicateForAllMonths by remember { mutableStateOf(false) }
+    var showError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Novo Orçamento") },
+        modifier = Modifier
+            .fillMaxWidth(0.95f)
+            .padding(8.dp),
+        title = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .padding(bottom = 4.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Novo Orçamento",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
-                ) {
-                    OutlinedTextField(
-                        value = selectedCategory?.name ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Categoria") },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Categoria
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Categoria",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
-
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        categories.forEach { category ->
-                            DropdownMenuItem(
-                                text = { Text(category.name) },
-                                onClick = {
-                                    selectedCategory = category
-                                    expanded = false
-                                }
+                        ExposedDropdownMenuBox(
+                            expanded = expanded,
+                            onExpandedChange = { expanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedCategory?.name ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                placeholder = { 
+                                    Text(
+                                        "Selecione uma categoria",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                trailingIcon = {
+                                    Icon(
+                                        if (expanded) Icons.Default.KeyboardArrowUp 
+                                        else Icons.Default.KeyboardArrowDown,
+                                        "Expandir"
+                                    )
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    unfocusedBorderColor = Color.Transparent,
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                                ),
+                                textStyle = MaterialTheme.typography.bodyMedium
                             )
+
+                            ExposedDropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                categories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Text(
+                                                text = category.name,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedCategory = category
+                                            expanded = false
+                                        },
+                                        colors = MenuDefaults.itemColors(
+                                            textColor = if (selectedCategory == category)
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
                 }
 
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { amount = it },
-                    label = { Text("Valor") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                // Valor
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Valor do Orçamento",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = amount,
+                            onValueChange = { 
+                                amount = it
+                                showError = false
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.fillMaxWidth(),
+                            prefix = { 
+                                Text(
+                                    "R$ ",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
+                            placeholder = { 
+                                Text(
+                                    "0,00",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            },
+                            isError = showError,
+                            supportingText = if (showError) {
+                                { Text("Digite um valor válido") }
+                            } else null,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            ),
+                            textStyle = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                // Opção de Replicar
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    prefix = { Text("R$ ") }
-                )
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { replicateForAllMonths = !replicateForAllMonths }
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Replicar para todos os meses",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Criar este orçamento para todo o ano",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = replicateForAllMonths,
+                            onCheckedChange = { replicateForAllMonths = it }
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     selectedCategory?.let { category ->
                         amount.toDoubleOrNull()?.let { value ->
-                            onConfirm(category, value)
-                        }
+                            onConfirm(category, value, replicateForAllMonths)
+                        } ?: run { showError = true }
                     }
                 },
-                enabled = selectedCategory != null && amount.isNotEmpty()
+                enabled = selectedCategory != null && amount.isNotEmpty(),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Text("Confirmar")
+                Text(
+                    text = "Criar Orçamento",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar")
+            OutlinedButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Text(
+                    text = "Cancelar",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
             }
         }
     )
