@@ -43,7 +43,8 @@ fun App() {
     val budgetViewModel = remember { 
         BudgetViewModel(
             repository = RepositoryProvider.provideBudgetRepository(),
-            categoryRepository = RepositoryProvider.provideCategoryRepository()
+            categoryRepository = RepositoryProvider.provideCategoryRepository(),
+            transactionRepository = RepositoryProvider.provideTransactionRepository()
         ) 
     }
     val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel, budgetViewModel) }

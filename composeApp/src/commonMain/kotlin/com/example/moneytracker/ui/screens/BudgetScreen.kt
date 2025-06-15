@@ -1,8 +1,9 @@
 package com.example.moneytracker.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,15 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.SavingsGoal
 import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,54 +34,290 @@ fun BudgetScreen(
     val categories by viewModel.categories.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedBudget by remember { mutableStateOf<Budget?>(null) }
+    var showMonthPicker by remember { mutableStateOf(false) }
     
     val currentDate = remember {
         Clock.System.now()
             .toLocalDateTime(TimeZone.currentSystemDefault())
-            .let { "${it.month.name} ${it.year}" }
+    }
+
+    var selectedMonth by remember { mutableStateOf(currentDate.month) }
+    var selectedYear by remember { mutableStateOf(currentDate.year) }
+
+    LaunchedEffect(selectedMonth, selectedYear) {
+        viewModel.loadBudgets(selectedMonth.ordinal, selectedYear)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Orçamento - $currentDate") },
+                title = { Text("Orçamentos") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Orçamento")
             }
         }
     ) { padding ->
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
+            // Month Selector
+            Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                    .fillMaxWidth()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
             ) {
-                items(state.budgets) { budget ->
-                    BudgetCard(
-                        budget = budget,
-                        onEdit = { selectedBudget = budget },
-                        onDelete = { viewModel.deleteBudget(budget.id) }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        if (selectedMonth == Month.JANUARY) {
+                            selectedMonth = Month.DECEMBER
+                            selectedYear--
+                        } else {
+                            selectedMonth = selectedMonth.minus(1)
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.KeyboardArrowLeft,
+                            contentDescription = "Mês Anterior",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
+                    TextButton(
+                        onClick = { showMonthPicker = true }
+                    ) {
+                        Text(
+                            text = "${selectedMonth.name} $selectedYear",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+
+                    IconButton(onClick = {
+                        if (selectedMonth == Month.DECEMBER) {
+                            selectedMonth = Month.JANUARY
+                            selectedYear++
+                        } else {
+                            selectedMonth = selectedMonth.plus(1)
+                        }
+                    }) {
+                        Icon(
+                            Icons.Default.KeyboardArrowRight,
+                            contentDescription = "Próximo Mês",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+            }
+
+            // Summary Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Total Orçado",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.amount })}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Total Gasto",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                            Text(
+                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.spent })}",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LinearProgressIndicator(
+                        progress = if (state.budgets.sumOf { it.amount } > 0) {
+                            (state.budgets.sumOf { it.spent } / state.budgets.sumOf { it.amount }).toFloat().coerceIn(0f, 1f)
+                        } else 0f,
+                        modifier = Modifier.fillMaxWidth(),
+                        color = when {
+                            state.budgets.sumOf { it.spent } >= state.budgets.sumOf { it.amount } * 0.9 -> MaterialTheme.colorScheme.error
+                            state.budgets.sumOf { it.spent } >= state.budgets.sumOf { it.amount } * 0.7 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                            else -> MaterialTheme.colorScheme.primary
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Restante: R$ ${String.format("%.2f", state.budgets.sumOf { it.amount - it.spent })}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (state.budgets.sumOf { it.amount - it.spent } < 0)
+                            MaterialTheme.colorScheme.error
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
+
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.budgets.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Nenhum orçamento definido",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = "Clique no + para adicionar um orçamento",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(state.budgets) { budget ->
+                        BudgetCard(
+                            budget = budget,
+                            onEdit = { selectedBudget = budget },
+                            onDelete = { viewModel.deleteBudget(budget.id) }
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    if (showMonthPicker) {
+        AlertDialog(
+            onDismissRequest = { showMonthPicker = false },
+            title = { Text("Selecionar Mês") },
+            text = {
+                Column {
+                    Month.entries.chunked(3).forEach { monthRow ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            monthRow.forEach { month ->
+                                TextButton(
+                                    onClick = {
+                                        selectedMonth = month
+                                        showMonthPicker = false
+                                    },
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = if (month == selectedMonth)
+                                            MaterialTheme.colorScheme.primary
+                                        else
+                                            MaterialTheme.colorScheme.onSurface
+                                    )
+                                ) {
+                                    Text(month.name.substring(0, 3))
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        IconButton(onClick = { selectedYear-- }) {
+                            Icon(Icons.Default.KeyboardArrowLeft, "Ano Anterior")
+                        }
+                        Text(
+                            text = selectedYear.toString(),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        IconButton(onClick = { selectedYear++ }) {
+                            Icon(Icons.Default.KeyboardArrowRight, "Próximo Ano")
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMonthPicker = false }) {
+                    Text("Fechar")
+                }
+            }
+        )
     }
 
     if (showAddDialog) {
@@ -88,7 +325,7 @@ fun BudgetScreen(
             categories = categories,
             onDismiss = { showAddDialog = false },
             onConfirm = { category, amount ->
-                viewModel.createBudget(category, amount)
+                viewModel.createBudget(category, amount, selectedMonth.ordinal, selectedYear)
                 showAddDialog = false
             }
         )
@@ -114,50 +351,87 @@ private fun BudgetCard(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onEdit
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f),
+        onClick = onEdit,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = budget.category.name,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Excluir")
+                Column {
+                    Text(
+                        text = budget.category.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Meta: R$ ${budget.amount}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+                IconButton(
+                    onClick = onDelete,
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Excluir",
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                LinearProgressIndicator(
+                    progress = budget.progress,
+                    modifier = Modifier.fillMaxWidth(),
+                    color = when {
+                        budget.progress >= 0.9f -> MaterialTheme.colorScheme.error
+                        budget.progress >= 0.7f -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                )
 
-            LinearProgressIndicator(
-                progress = budget.progress,
-                modifier = Modifier.fillMaxWidth()
-            )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Gasto",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "R$ ${budget.spent}",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Gasto: R$ ${budget.spent}")
-                Text("Meta: R$ ${budget.amount}")
+                Text(
+                    text = "Restante: R$ ${budget.remaining}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (budget.remaining < 0)
+                        MaterialTheme.colorScheme.error
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
             }
-
-            Text(
-                text = "Restante: R$ ${budget.remaining}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (budget.remaining < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-            )
         }
     }
 }
@@ -177,7 +451,7 @@ private fun AddBudgetDialog(
         onDismissRequest = onDismiss,
         title = { Text("Novo Orçamento") },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it }
@@ -187,7 +461,9 @@ private fun AddBudgetDialog(
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Categoria") },
-                        modifier = Modifier.menuAnchor()
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
 
                     ExposedDropdownMenu(
@@ -206,14 +482,14 @@ private fun AddBudgetDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { amount = it },
                     label = { Text("Valor") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                    prefix = { Text("R$ ") }
                 )
             }
         },
@@ -225,7 +501,8 @@ private fun AddBudgetDialog(
                             onConfirm(category, value)
                         }
                     }
-                }
+                },
+                enabled = selectedCategory != null && amount.isNotEmpty()
             ) {
                 Text("Confirmar")
             }
@@ -256,7 +533,9 @@ private fun EditBudgetDialog(
                 onValueChange = { amount = it },
                 label = { Text("Novo Valor") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+                prefix = { Text("R$ ") }
             )
         },
         confirmButton = {
@@ -265,7 +544,8 @@ private fun EditBudgetDialog(
                     amount.toDoubleOrNull()?.let { value ->
                         onConfirm(value)
                     }
-                }
+                },
+                enabled = amount.isNotEmpty()
             ) {
                 Text("Confirmar")
             }
@@ -276,49 +556,6 @@ private fun EditBudgetDialog(
             }
         }
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun BudgetItem(budget: Budget, onDelete: () -> Unit) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    ListItem(
-        headlineContent = { Text(budget.category.name) },
-        supportingContent = { Text("R$ ${String.format("%.2f", budget.amount)}") },
-        trailingContent = {
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Excluir orçamento",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    )
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Excluir Orçamento") },
-            text = { Text("Tem certeza que deseja excluir este orçamento?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Excluir")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

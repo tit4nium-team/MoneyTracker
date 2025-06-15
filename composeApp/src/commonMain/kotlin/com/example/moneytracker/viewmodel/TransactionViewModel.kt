@@ -40,7 +40,7 @@ class TransactionViewModel(
     val state: StateFlow<TransactionState> = _state.asStateFlow()
 
     val categories = categoryViewModel.categories
-    val budgets = budgetViewModel.budgets
+    val budgets = budgetViewModel.state
 
     private var transactionsJob: Job? = null
     private var userId: String? = null
@@ -56,7 +56,7 @@ class TransactionViewModel(
         category: TransactionCategory,
         amount: Double
     ): Boolean {
-        val budget = budgets.value.find { it.category.id == category.id } ?: return false
+        val budget = budgets.value.budgets.find { it.category.id == category.id } ?: return false
         val monthStart = getCurrentMonthStart()
         
         val monthlySpent = state.value.transactions
