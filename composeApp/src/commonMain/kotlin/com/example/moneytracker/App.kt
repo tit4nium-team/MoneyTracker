@@ -118,6 +118,7 @@ fun App() {
                         viewModel = transactionViewModel,
                         authViewModel = authViewModel,
                         categoryViewModel = categoryViewModel,
+                        budgetViewModel = budgetViewModel,
                         onNavigate = { route ->
                             when (route) {
                                 Screen.EditExpense.route -> currentScreen = Screen.EditExpense

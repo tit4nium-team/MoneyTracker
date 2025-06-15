@@ -28,12 +28,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.viewmodel.TransactionState
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
+import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +43,7 @@ import kotlinx.coroutines.launch
 fun DashboardScreen(
     viewModel: TransactionViewModel,
     categoryViewModel: CategoryViewModel,
+    budgetViewModel: BudgetViewModel,
     onAddTransaction: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToInsights: () -> Unit,
@@ -48,9 +51,10 @@ fun DashboardScreen(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Dashboard", "Transactions")
+    val tabs = listOf("Dashboard", "Transactions", "Budget Overview")
     val state by viewModel.state.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val budgetState by budgetViewModel.state.collectAsState()
 
     Scaffold(
         floatingActionButton = {
@@ -62,11 +66,11 @@ fun DashboardScreen(
                 Icon(Icons.Default.Add, contentDescription = "Add Transaction")
             }
         }
-    ) {
-
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
         ) {
             // Balance Card - Always visible
             BalanceCard(state = state)
@@ -105,11 +109,15 @@ fun DashboardScreen(
                     onDeleteTransaction = { viewModel.deleteTransaction(it) },
                     modifier = Modifier.fillMaxSize()
                 )
+                2 -> BudgetOverviewTab(
+                    budgets = budgetState.budgets,
+                    transactions = state.transactions,
+                    onNavigateToBudget = { /* Implement navigation to BudgetScreen */ }
+                )
             }
         }
     }
 }
-
 
 @Composable
 private fun CategoryBreakdownTab(
@@ -583,6 +591,169 @@ private fun BalanceCard(state: TransactionState) {
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BudgetOverviewTab(
+    budgets: List<Budget>,
+    transactions: List<Transaction>,
+    onNavigateToBudget: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (budgets.isEmpty()) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.AddCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Nenhum orçamento definido",
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Button(
+                    onClick = onNavigateToBudget,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text("Criar Orçamento")
+                }
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                Text(
+                    text = "Visão Geral do Orçamento",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
+            items(budgets) { budget ->
+                BudgetOverviewCard(
+                    budget = budget,
+                    transactions = transactions.filter { 
+                        it.category == budget.category && 
+                        it.type == TransactionType.EXPENSE 
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BudgetOverviewCard(
+    budget: Budget,
+    transactions: List<Transaction>
+) {
+    val totalSpent = transactions.sumOf { it.amount }
+    val progress = (totalSpent / budget.amount).coerceIn(0.0, 1.0)
+    val isOverBudget = totalSpent > budget.amount
+    val remaining = budget.amount - totalSpent
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = budget.category.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    text = "R$ ${String.format("%.2f", budget.amount)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LinearProgressIndicator(
+                progress = progress.toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "Gasto",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "R$ ${String.format("%.2f", totalSpent)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "Restante",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "R$ ${String.format("%.2f", remaining)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            if (isOverBudget) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Orçamento excedido em R$ ${String.format("%.2f", -remaining)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }

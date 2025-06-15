@@ -17,6 +17,8 @@ import com.example.moneytracker.Screen
 import com.example.moneytracker.viewmodel.AuthViewModel
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
+import com.example.moneytracker.viewmodel.BudgetViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,97 +26,116 @@ fun MainScreen(
     viewModel: TransactionViewModel,
     authViewModel: AuthViewModel,
     categoryViewModel: CategoryViewModel,
+    budgetViewModel: BudgetViewModel,
     onNavigate: (String) -> Unit
 ) {
     var selectedItem by remember { mutableStateOf(0) }
-    var showMenu by remember { mutableStateOf(false) }
-    val state by viewModel.state.collectAsState()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Controle Financeiro") },
-                navigationIcon = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-
-        Box(
-            contentAlignment = Alignment.TopStart
-        ) {
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Histórico") },
-                    leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                NavigationDrawerItem(
+                    label = { Text("Dashboard") },
+                    selected = selectedItem == 0,
                     onClick = {
-                        showMenu = false
-                        onNavigate(Screen.MonthlyHistory.route)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Análises") },
-                    leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                    onClick = {
-                        showMenu = false
-                        onNavigate(Screen.Insights.route)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Orçamento") },
-                    leadingIcon = { Icon(Icons.Default.Build, contentDescription = null) },
-                    onClick = {
-                        showMenu = false
-                        onNavigate(Screen.Budget.route)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Configurações") },
-                    leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                    onClick = {
-                        showMenu = false
-                        onNavigate(Screen.Settings.route)
-                    }
-                )
-                Divider()
-                DropdownMenuItem(
-                    text = { Text("Sair") },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.ExitToApp,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
+                        selectedItem = 0
+                        scope.launch { drawerState.close() }
                     },
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Histórico") },
+                    selected = selectedItem == 1,
                     onClick = {
-                        showMenu = false
-                        authViewModel.signOut()
+                        selectedItem = 1
+                        scope.launch {
+                            drawerState.close()
+                            onNavigate(Screen.MonthlyHistory.route)
+                        }
                     },
-                    colors = MenuDefaults.itemColors(
-                        textColor = MaterialTheme.colorScheme.error
-                    )
+                    icon = { Icon(Icons.Default.Build, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Insights") },
+                    selected = selectedItem == 2,
+                    onClick = {
+                        selectedItem = 2
+                        scope.launch {
+                            drawerState.close()
+                            onNavigate(Screen.Insights.route)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Build, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Orçamentos") },
+                    selected = selectedItem == 3,
+                    onClick = {
+                        selectedItem = 3
+                        scope.launch {
+                            drawerState.close()
+                            onNavigate(Screen.Budget.route)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Home, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Configurações") },
+                    selected = selectedItem == 4,
+                    onClick = {
+                        selectedItem = 4
+                        scope.launch {
+                            drawerState.close()
+                            onNavigate(Screen.Settings.route)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Sair") },
+                    selected = false,
+                    onClick = {
+                        scope.launch {
+                            authViewModel.signOut()
+                            drawerState.close()
+                        }
+                    },
+                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) }
                 )
             }
         }
-
-
-        Column(modifier = Modifier.padding(padding)) {
-            DashboardScreen(
-                viewModel = viewModel,
-                categoryViewModel = categoryViewModel,
-                onAddTransaction = { onNavigate(Screen.EditExpense.route) },
-                onNavigateToHistory = { onNavigate(Screen.MonthlyHistory.route) },
-                onNavigateToInsights = { onNavigate(Screen.Insights.route) },
-                onSignOut = { authViewModel.signOut() }
-            )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Money Tracker") },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Open menu")
+                        }
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Box(modifier = Modifier.padding(paddingValues)) {
+                DashboardScreen(
+                    viewModel = viewModel,
+                    categoryViewModel = categoryViewModel,
+                    budgetViewModel = budgetViewModel,
+                    onAddTransaction = { onNavigate(Screen.EditExpense.route) },
+                    onNavigateToHistory = { onNavigate(Screen.MonthlyHistory.route) },
+                    onNavigateToInsights = { onNavigate(Screen.Insights.route) },
+                    onSignOut = {
+                        scope.launch {
+                            authViewModel.signOut()
+                        }
+                    }
+                )
+            }
         }
-
     }
 }
 
