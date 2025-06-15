@@ -31,7 +31,7 @@ class FirebaseBudgetRepository : BudgetRepository {
     private fun Budget.toMap(): Map<String, Any> {
         return mapOf(
             "userId" to userId,
-            "category" to category.name,
+            "categoryId" to category.id,
             "amount" to amount,
             "month" to month,
             "year" to year,
