@@ -40,6 +40,7 @@ kotlin {
                 implementation("com.google.firebase:firebase-auth-ktx")
                 implementation("com.google.firebase:firebase-firestore-ktx")
                 implementation("com.google.firebase:firebase-analytics-ktx")
+                implementation("androidx.work:work-runtime-ktx:2.9.0")
             }
         }
         val commonMain by getting {
