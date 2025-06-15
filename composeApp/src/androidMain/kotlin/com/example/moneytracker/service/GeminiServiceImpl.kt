@@ -82,21 +82,34 @@ internal class AndroidGeminiService {
     }
 
     private fun buildFinancialPrompt(transactions: List<Transaction>): String {
-        val totalIncome = transactions.filter { it.amount > 0 }.sumOf { it.amount }
-        val totalExpenses = transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+        // Ordena as transações por data, da mais recente para a mais antiga
+        val sortedTransactions = transactions.sortedByDescending { 
+            parseDate(it.date.toString()).toInstant(TimeZone.currentSystemDefault())
+        }
+
+        val totalIncome = sortedTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+        val totalExpenses = sortedTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
         val balance = totalIncome - totalExpenses
 
-        val categoryExpenses = transactions
+        val categoryExpenses = sortedTransactions
             .filter { it.amount < 0 }
             .groupBy { it.category.name }
             .mapValues { it.value.sumOf { transaction -> abs(transaction.amount) } }
             .toList()
             .sortedByDescending { it.second }
 
-        val monthlyData = transactions.groupBy { transaction ->
-            val dateTime = parseDate(transaction.date.toString())
-            "${dateTime.month.name} ${dateTime.year}"
-        }
+        val monthlyData = sortedTransactions
+            .groupBy { transaction ->
+                val dateTime = parseDate(transaction.date.toString())
+                "${dateTime.month.name} ${dateTime.year}"
+            }
+            .toList()
+            .sortedByDescending { (monthYear, _) ->
+                // Extrai o mês e ano da string e converte para data para ordenação
+                val (month, year) = monthYear.split(" ")
+                val monthNumber = Month.valueOf(month).ordinal
+                year.toInt() * 100 + monthNumber // Formato YYYYMM para ordenação correta
+            }
 
         return """
             Atue como um consultor financeiro profissional e analise os seguintes dados financeiros:
@@ -109,10 +122,10 @@ internal class AndroidGeminiService {
             Despesas por Categoria:
             ${categoryExpenses.joinToString("\n") { "- ${it.first}: R$ ${String.format("%.2f", it.second)}" }}
             
-            Dados Mensais:
-            ${monthlyData.map { entry ->
-                val monthlyExpenses = entry.value.filter { it.amount < 0 }.sumOf { abs(it.amount) }
-                "- ${entry.key}: R$ ${String.format("%.2f", monthlyExpenses)}"
+            Dados Mensais (do mais recente ao mais antigo):
+            ${monthlyData.map { (monthYear, transactions) ->
+                val monthlyExpenses = transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+                "- ${monthYear}: R$ ${String.format("%.2f", monthlyExpenses)}"
             }.joinToString("\n")}
             
             Gere 3 insights diferentes no seguinte formato JSON:

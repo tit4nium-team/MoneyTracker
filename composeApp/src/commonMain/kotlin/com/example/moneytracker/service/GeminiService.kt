@@ -1,9 +1,10 @@
 package com.example.moneytracker.service
 
 import com.example.moneytracker.model.Transaction
+import com.example.moneytracker.model.Insight
 
 abstract class InsightGenerator {
-    abstract suspend fun generateFinancialInsights(transactions: List<Transaction>): String
+    abstract suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight>
 }
 
 internal object GeminiServiceFactory {
@@ -15,8 +16,14 @@ internal object GeminiServiceFactory {
 
     fun getInstance(): InsightGenerator {
         return instance ?: object : InsightGenerator() {
-            override suspend fun generateFinancialInsights(transactions: List<Transaction>): String {
-                return "Insights não disponíveis nesta plataforma"
+            override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
+                return listOf(
+                    Insight(
+                        title = "Serviço Indisponível",
+                        description = "Insights não disponíveis nesta plataforma",
+                        recommendation = "Tente acessar em um dispositivo Android."
+                    )
+                )
             }
         }.also { instance = it }
     }

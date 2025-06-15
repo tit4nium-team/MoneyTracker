@@ -83,10 +83,22 @@ fun MainScreen(
                     icon = { Icon(Icons.Default.Home, contentDescription = null) }
                 )
                 NavigationDrawerItem(
-                    label = { Text("Configurações") },
+                    label = { Text("Pergunte ao Gil") },
                     selected = selectedItem == 4,
                     onClick = {
                         selectedItem = 4
+                        scope.launch {
+                            drawerState.close()
+                            onNavigate(Screen.Chat.route)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.ThumbUp, contentDescription = null) }
+                )
+                NavigationDrawerItem(
+                    label = { Text("Configurações") },
+                    selected = selectedItem == 5,
+                    onClick = {
+                        selectedItem = 5
                         scope.launch {
                             drawerState.close()
                             onNavigate(Screen.Settings.route)
@@ -127,7 +139,7 @@ fun MainScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionListItem(
+fun TransactionListItem2(
     transaction: Transaction,
     onDelete: () -> Unit
 ) {

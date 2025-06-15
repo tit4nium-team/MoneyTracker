@@ -15,6 +15,7 @@ import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.InsightsViewModel
 import com.example.moneytracker.viewmodel.BudgetViewModel
+import com.example.moneytracker.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -27,6 +28,7 @@ sealed class Screen(val route: String) {
     object Insights : Screen("insights")
     object Settings : Screen("settings")
     object Budget : Screen("budget")
+    object Chat : Screen("chat")
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -48,6 +50,7 @@ fun App() {
         ) 
     }
     val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel, budgetViewModel) }
+    val chatViewModel = remember { ChatViewModel(transactionViewModel, budgetViewModel) }
     val scope = rememberCoroutineScope()
     val authState by authViewModel.state.collectAsState()
 
@@ -127,6 +130,7 @@ fun App() {
                                 Screen.Insights.route -> currentScreen = Screen.Insights
                                 Screen.Settings.route -> {} // Implementar tela de configurações
                                 Screen.Budget.route -> currentScreen = Screen.Budget
+                                Screen.Chat.route -> currentScreen = Screen.Chat
                             }
                         }
                     )
@@ -154,6 +158,12 @@ fun App() {
                 Screen.Budget -> {
                     BudgetScreen(
                         viewModel = budgetViewModel,
+                        onNavigateBack = { currentScreen = Screen.Dashboard }
+                    )
+                }
+                Screen.Chat -> {
+                    ChatScreen(
+                        viewModel = chatViewModel,
                         onNavigateBack = { currentScreen = Screen.Dashboard }
                     )
                 }

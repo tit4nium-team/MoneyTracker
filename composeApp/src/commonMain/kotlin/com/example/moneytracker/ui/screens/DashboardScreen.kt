@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.semantics.text
 import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -233,7 +234,13 @@ private fun QuickInsightCard(transactions: List<Transaction>) {
     LaunchedEffect(transactions) {
         isLoading = true
         scope.launch {
-            insight = geminiService.generateFinancialInsights(transactions)
+            val insightsList = geminiService.generateFinancialInsights(transactions)
+            insight = if (insightsList.isNotEmpty()) {
+                // Assuming Insight has a property that is a String, e.g., insight.text
+                insightsList.first().title // Or however you get the String representation
+            } else {
+                "Nenhum insight disponível." // Or some other default message
+            }
             isLoading = false
         }
     }
@@ -417,12 +424,9 @@ fun TransactionsTab(
 ) {
     var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
-    var categoryName by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
-        // Filter chips
+        // Category filter chips
         LazyRow(
             modifier = Modifier
                 .fillMaxWidth()
@@ -433,13 +437,7 @@ fun TransactionsTab(
                 FilterChip(
                     selected = selectedCategory == null,
                     onClick = { selectedCategory = null },
-                    label = { Text("All") },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    label = { Text("Todas") }
                 )
             }
 
@@ -447,44 +445,10 @@ fun TransactionsTab(
                 FilterChip(
                     selected = selectedCategory?.id == category.id,
                     onClick = { selectedCategory = category },
-                    label = { Text(category.toString()) },
-                    leadingIcon = if (selectedCategory?.id == category.id) {
-                        {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    } else null,
-                    trailingIcon = if (category.isCustom) {
-                        {
-                            IconButton(
-                                onClick = {
-                                    scope.launch {
-                                        categoryViewModel.deleteCategory(category.id)
-                                    }
-                                },
-                                modifier = Modifier.size(16.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Delete category",
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                            }
-                        }
-                    } else null,
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        labelColor = MaterialTheme.colorScheme.onSurface
-                    )
+                    label = { Text(category.displayName) }
                 )
             }
 
-            // Add Category Button
             item {
                 FilterChip(
                     selected = false,
@@ -505,165 +469,87 @@ fun TransactionsTab(
             }
         }
 
-        // Filtered transactions list
+        // Filtered and sorted transactions list
         val filteredTransactions = selectedCategory?.let { category ->
             transactions.filter { it.category.id == category.id }
         } ?: transactions
 
-        if (filteredTransactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
-                    Text(
-                        text = if (selectedCategory != null)
-                            "Nenhuma transação encontrada para ${selectedCategory.toString()}"
-                        else
-                            "Nenhuma transação registrada ainda",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = filteredTransactions,
-                    key = { it.id }
-                ) { transaction ->
-                    TransactionItem(
-                        transaction = transaction,
-                        onDelete = { onDeleteTransaction(transaction.id) }
-                    )
-                }
+        // Ordena as transações por data, da mais recente para a mais antiga
+        val sortedTransactions = filteredTransactions.sortedByDescending { transaction ->
+            try {
+                val pattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
+                val formatter = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
+                formatter.parse(transaction.date).time
+            } catch (e: Exception) {
+                0L // Em caso de erro no parsing da data, coloca no final da lista
             }
         }
-    }
 
-    if (showAddCategoryDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddCategoryDialog = false },
-            title = { Text("Adicionar Nova Categoria") },
-            text = {
-                OutlinedTextField(
-                    value = categoryName,
-                    onValueChange = { categoryName = it },
-                    label = { Text("Nome da Categoria") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(sortedTransactions) { transaction ->
+                TransactionListItem(
+                    transaction = transaction,
+                    onDelete = { onDeleteTransaction(transaction.id) }
                 )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (categoryName.isNotBlank()) {
-                            scope.launch {
-                                categoryViewModel.addCategory(categoryName).collect { result ->
-                                    result.onSuccess {
-                                        showAddCategoryDialog = false
-                                        categoryName = ""
-                                    }.onFailure {
-                                        showError = true
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    enabled = categoryName.isNotBlank()
-                ) {
-                    Text("Adicionar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showAddCategoryDialog = false
-                    categoryName = ""
-                }) {
-                    Text("Cancelar")
-                }
             }
-        )
-    }
-
-    if (showError) {
-        AlertDialog(
-            onDismissRequest = { showError = false },
-            title = { Text("Erro") },
-            text = { Text("Falha ao adicionar categoria. Por favor, tente novamente.") },
-            confirmButton = {
-                TextButton(onClick = { showError = false }) {
-                    Text("OK")
-                }
-            }
-        )
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TransactionItem(
+fun TransactionListItem(
     transaction: Transaction,
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showDeleteDialog = true },
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    ListItem(
+        headlineContent = { Text(transaction.description) },
+        supportingContent = { 
             Column {
                 Text(
-                    text = transaction.description,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Text(
-                    text = transaction.category.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = transaction.date.toString(),
+                    text = transaction.category.displayName,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = formatDate(transaction.date),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             }
-            Text(
-                text = "R$ ${String.format("%.2f", transaction.amount)}",
-                style = MaterialTheme.typography.titleMedium,
-                color = if (transaction.type == TransactionType.INCOME)
-                    MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.error
-            )
+        },
+        trailingContent = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = when (transaction.type) {
+                        TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
+                        TransactionType.EXPENSE -> "-R$ ${String.format("%.2f", transaction.amount)}"
+                    },
+                    color = when (transaction.type) {
+                        TransactionType.INCOME -> MaterialTheme.colorScheme.primary
+                        TransactionType.EXPENSE -> MaterialTheme.colorScheme.error
+                    },
+                    fontWeight = FontWeight.Bold
+                )
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Excluir transação",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
-    }
+    )
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -677,18 +563,28 @@ fun TransactionItem(
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("Excluir", color = MaterialTheme.colorScheme.error)
+                    Text("Excluir")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
+                    Text("Cancelar")
                 }
-            },
-            containerColor = MaterialTheme.colorScheme.surface,
-            titleContentColor = MaterialTheme.colorScheme.onSurface,
-            textContentColor = MaterialTheme.colorScheme.onSurface
+            }
         )
+    }
+}
+
+private fun formatDate(dateStr: String): String {
+    return try {
+        val inputPattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
+        val inputFormatter = java.text.SimpleDateFormat(inputPattern, java.util.Locale.US)
+        val date = inputFormatter.parse(dateStr)
+        
+        val outputFormatter = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+        outputFormatter.format(date)
+    } catch (e: Exception) {
+        dateStr // Retorna a string original em caso de erro
     }
 }
 
