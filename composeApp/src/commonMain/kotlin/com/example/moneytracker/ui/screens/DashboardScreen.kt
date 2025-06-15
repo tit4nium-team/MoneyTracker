@@ -44,6 +44,7 @@ fun DashboardScreen(
     viewModel: TransactionViewModel,
     categoryViewModel: CategoryViewModel,
     budgetViewModel: BudgetViewModel,
+    onDrawerAction: () -> Unit,
     onAddTransaction: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToInsights: () -> Unit,
@@ -57,6 +58,16 @@ fun DashboardScreen(
     val budgetState by budgetViewModel.state.collectAsState()
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Money Tracker") },
+                navigationIcon = {
+                    IconButton(onClick = { onDrawerAction() }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Open menu")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddTransaction,

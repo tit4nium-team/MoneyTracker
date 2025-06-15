@@ -108,34 +108,20 @@ fun MainScreen(
             }
         }
     ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Money Tracker") },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Open menu")
-                        }
-                    }
-                )
+        DashboardScreen(
+            viewModel = viewModel,
+            categoryViewModel = categoryViewModel,
+            budgetViewModel = budgetViewModel,
+            onAddTransaction = { onNavigate(Screen.EditExpense.route) },
+            onNavigateToHistory = { onNavigate(Screen.MonthlyHistory.route) },
+            onNavigateToInsights = { onNavigate(Screen.Insights.route) },
+            onDrawerAction = { scope.launch { drawerState.open() } },
+            onSignOut = {
+                scope.launch {
+                    authViewModel.signOut()
+                }
             }
-        ) { paddingValues ->
-            Box(modifier = Modifier.padding(paddingValues)) {
-                DashboardScreen(
-                    viewModel = viewModel,
-                    categoryViewModel = categoryViewModel,
-                    budgetViewModel = budgetViewModel,
-                    onAddTransaction = { onNavigate(Screen.EditExpense.route) },
-                    onNavigateToHistory = { onNavigate(Screen.MonthlyHistory.route) },
-                    onNavigateToInsights = { onNavigate(Screen.Insights.route) },
-                    onSignOut = {
-                        scope.launch {
-                            authViewModel.signOut()
-                        }
-                    }
-                )
-            }
-        }
+        )
     }
 }
 
