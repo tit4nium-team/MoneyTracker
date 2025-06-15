@@ -39,9 +39,14 @@ fun App() {
     val categoryRepository = remember { RepositoryProvider.provideCategoryRepository() }
     val authViewModel = remember { AuthViewModel(authRepository) }
     val categoryViewModel = remember { CategoryViewModel(categoryRepository) }
-    val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel) }
     val insightsViewModel = remember { InsightsViewModel() }
-    val budgetViewModel = remember { BudgetViewModel() }
+    val budgetViewModel = remember { 
+        BudgetViewModel(
+            repository = RepositoryProvider.provideBudgetRepository(),
+            categoryRepository = RepositoryProvider.provideCategoryRepository()
+        ) 
+    }
+    val transactionViewModel = remember { TransactionViewModel(repository, categoryViewModel, budgetViewModel) }
     val scope = rememberCoroutineScope()
     val authState by authViewModel.state.collectAsState()
 

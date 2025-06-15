@@ -33,7 +33,7 @@ data class TransactionState(
 class TransactionViewModel(
     private val repository: TransactionRepository,
     private val categoryViewModel: CategoryViewModel,
-    private val budgetViewModel: BudgetViewModel = BudgetViewModel(),
+    private val budgetViewModel: BudgetViewModel,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _state = MutableStateFlow(TransactionState())

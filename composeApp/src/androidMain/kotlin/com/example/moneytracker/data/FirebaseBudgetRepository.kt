@@ -4,6 +4,7 @@ import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.SavingsGoal
 import com.example.moneytracker.model.TransactionCategory
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.QueryDocumentSnapshot
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -13,6 +14,30 @@ class FirebaseBudgetRepository : BudgetRepository {
     private val db = FirebaseFirestore.getInstance()
     private val budgetsCollection = db.collection("budgets")
     private val savingsGoalsCollection = db.collection("savings_goals")
+
+    private fun QueryDocumentSnapshot.toBudget(): Budget {
+        return Budget(
+            id = id,
+            userId = getString("userId") ?: "",
+            category = TransactionCategory.DEFAULT_CATEGORIES.find { it.id == getString("categoryId") }
+                ?: TransactionCategory.OTHER,
+            amount = getDouble("amount") ?: 0.0,
+            month = getLong("month")?.toInt() ?: 1,
+            year = getLong("year")?.toInt() ?: 2024,
+            spent = getDouble("spent") ?: 0.0
+        )
+    }
+
+    private fun Budget.toMap(): Map<String, Any> {
+        return mapOf(
+            "userId" to userId,
+            "category" to category.name,
+            "amount" to amount,
+            "month" to month,
+            "year" to year,
+            "spent" to spent
+        )
+    }
 
     override fun getBudgetsFlow(userId: String): Flow<List<Budget>> = callbackFlow {
         val subscription = budgetsCollection
@@ -31,7 +56,9 @@ class FirebaseBudgetRepository : BudgetRepository {
                         
                         Budget(
                             category = category,
-                            amount = doc.getDouble("amount") ?: return@mapNotNull null
+                            amount = doc.getDouble("amount") ?: return@mapNotNull null,
+                            month = doc.getLong("month")?.toInt() ?: return@mapNotNull null,
+                            year = doc.getLong("year")?.toInt() ?: return@mapNotNull null
                         )
                     } catch (e: Exception) {
                         null
@@ -203,5 +230,68 @@ class FirebaseBudgetRepository : BudgetRepository {
         }
     } catch (e: Exception) {
         Result.failure(e)
+    }
+
+    override suspend fun createBudget(budget: Budget) {
+        budgetsCollection.add(budget.toMap()).await()
+    }
+
+    override suspend fun updateBudget(budget: Budget) {
+        budgetsCollection.document(budget.id).set(budget.toMap()).await()
+    }
+
+    override suspend fun deleteBudget(budgetId: String) {
+        budgetsCollection.document(budgetId).delete().await()
+    }
+
+    override suspend fun getBudget(budgetId: String): Budget? {
+        return budgetsCollection.document(budgetId).get().await().let { doc ->
+            if (doc.exists()) {
+                (doc as QueryDocumentSnapshot).toBudget()
+            } else {
+                null
+            }
+        }
+    }
+
+    override fun getBudgets(userId: String, month: Int, year: Int): Flow<List<Budget>> = callbackFlow {
+        val listener = budgetsCollection
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("month", month)
+            .whereEqualTo("year", year)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val budgets = snapshot?.documents?.mapNotNull { doc ->
+                    (doc as? QueryDocumentSnapshot)?.toBudget()
+                } ?: emptyList()
+
+                trySend(budgets)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun updateSpentAmount(
+        userId: String,
+        category: TransactionCategory,
+        month: Int,
+        year: Int,
+        amount: Double
+    ) {
+        val budgetDoc = budgetsCollection
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("category", category.name)
+            .whereEqualTo("month", month)
+            .whereEqualTo("year", year)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+
+        budgetDoc?.reference?.update("spent", amount)?.await()
     }
 } 

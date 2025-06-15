@@ -19,215 +19,263 @@ import com.example.moneytracker.model.SavingsGoal
 import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetScreen(viewModel: BudgetViewModel, onNavigateBack: () -> Unit) {
-    val budgets by viewModel.budgets.collectAsState()
-    val savingsGoals by viewModel.savingsGoals.collectAsState()
-    var showAddBudgetDialog by remember { mutableStateOf(false) }
-    var showAddSavingsDialog by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
-    var budgetAmount by remember { mutableStateOf("") }
-    var goalName by remember { mutableStateOf("") }
-    var goalAmount by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
-
-    if (showAddBudgetDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddBudgetDialog = false },
-            title = { Text("Adicionar Orçamento") },
-            text = {
-                Column {
-                    Text("Categoria")
-                    TransactionCategory.DEFAULT_CATEGORIES.forEach { category ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedCategory == category,
-                                onClick = { selectedCategory = category }
-                            )
-                            Text(category.name)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = budgetAmount,
-                        onValueChange = { budgetAmount = it },
-                        label = { Text("Valor do Orçamento") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        selectedCategory?.let { category ->
-                            budgetAmount.toDoubleOrNull()?.let { amount ->
-                                scope.launch {
-                                    viewModel.addBudget(category, amount)
-                                }
-                            }
-                        }
-                        showAddBudgetDialog = false
-                        selectedCategory = null
-                        budgetAmount = ""
-                    }
-                ) {
-                    Text("Adicionar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showAddBudgetDialog = false
-                        selectedCategory = null
-                        budgetAmount = ""
-                    }
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
-
-    if (showAddSavingsDialog) {
-        AlertDialog(
-            onDismissRequest = { showAddSavingsDialog = false },
-            title = { Text("Adicionar Meta de Economia") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = goalName,
-                        onValueChange = { goalName = it },
-                        label = { Text("Nome da Meta") },
-                        singleLine = true
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = goalAmount,
-                        onValueChange = { goalAmount = it },
-                        label = { Text("Valor da Meta") },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        goalAmount.toDoubleOrNull()?.let { amount ->
-                            if (goalName.isNotBlank()) {
-                                scope.launch {
-                                    viewModel.addSavingsGoal(goalName, amount)
-                                }
-                            }
-                        }
-                        showAddSavingsDialog = false
-                        goalName = ""
-                        goalAmount = ""
-                    }
-                ) {
-                    Text("Adicionar")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showAddSavingsDialog = false
-                        goalName = ""
-                        goalAmount = ""
-                    }
-                ) {
-                    Text("Cancelar")
-                }
-            }
-        )
+fun BudgetScreen(
+    viewModel: BudgetViewModel,
+    onNavigateBack: () -> Unit
+) {
+    val state by viewModel.state.collectAsState()
+    val categories by viewModel.categories.collectAsState()
+    var showAddDialog by remember { mutableStateOf(false) }
+    var selectedBudget by remember { mutableStateOf<Budget?>(null) }
+    
+    val currentDate = remember {
+        Clock.System.now()
+            .toLocalDateTime(TimeZone.currentSystemDefault())
+            .let { "${it.month.name} ${it.year}" }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Orçamento") },
+                title = { Text("Orçamento - $currentDate") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
                     }
                 }
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Adicionar Orçamento")
+            }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Orçamentos por Categoria",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn {
-                        items(budgets) { budget ->
-                            BudgetItem(
-                                budget = budget,
-                                onDelete = { viewModel.deleteBudget(budget.category.id) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { showAddBudgetDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Adicionar Orçamento")
-                    }
-                }
+                CircularProgressIndicator()
             }
-
-            Card(
+        } else {
+            LazyColumn(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Metas de Economia",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                items(state.budgets) { budget ->
+                    BudgetCard(
+                        budget = budget,
+                        onEdit = { selectedBudget = budget },
+                        onDelete = { viewModel.deleteBudget(budget.id) }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn {
-                        items(savingsGoals) { goal ->
-                            SavingsGoalItem(
-                                goal = goal,
-                                onDelete = { viewModel.deleteSavingsGoal(goal.name) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = { showAddSavingsDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Adicionar Meta")
-                    }
                 }
             }
         }
     }
+
+    if (showAddDialog) {
+        AddBudgetDialog(
+            categories = categories,
+            onDismiss = { showAddDialog = false },
+            onConfirm = { category, amount ->
+                viewModel.createBudget(category, amount)
+                showAddDialog = false
+            }
+        )
+    }
+
+    selectedBudget?.let { budget ->
+        EditBudgetDialog(
+            budget = budget,
+            onDismiss = { selectedBudget = null },
+            onConfirm = { amount ->
+                viewModel.updateBudget(budget, amount)
+                selectedBudget = null
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BudgetCard(
+    budget: Budget,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onEdit
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = budget.category.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Excluir")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            LinearProgressIndicator(
+                progress = budget.progress,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Gasto: R$ ${budget.spent}")
+                Text("Meta: R$ ${budget.amount}")
+            }
+
+            Text(
+                text = "Restante: R$ ${budget.remaining}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (budget.remaining < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddBudgetDialog(
+    categories: List<TransactionCategory>,
+    onDismiss: () -> Unit,
+    onConfirm: (TransactionCategory, Double) -> Unit
+) {
+    var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
+    var amount by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Novo Orçamento") },
+        text = {
+            Column {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoria") },
+                        modifier = Modifier.menuAnchor()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = { Text("Valor") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    selectedCategory?.let { category ->
+                        amount.toDoubleOrNull()?.let { value ->
+                            onConfirm(category, value)
+                        }
+                    }
+                }
+            ) {
+                Text("Confirmar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditBudgetDialog(
+    budget: Budget,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var amount by remember { mutableStateOf(budget.amount.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Editar Orçamento - ${budget.category.name}") },
+        text = {
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { amount = it },
+                label = { Text("Novo Valor") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    amount.toDoubleOrNull()?.let { value ->
+                        onConfirm(value)
+                    }
+                }
+            ) {
+                Text("Confirmar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
