@@ -99,7 +99,7 @@ android {
             buildConfigField("String", "FIREBASE_PROJECT_ID", "\"moneytracker-5508d\"") // Replace with your project ID
             buildConfigField("String", "FIREBASE_APP_ID", "\"1:534125893092:android:c6a74d7202b54b34fa23f1\"") // Replace with your app ID
             buildConfigField("String", "FIREBASE_API_KEY", "\"AIzaSyBL1j9F1_ctko5TgFMh8bAbGiTe2t6B_H0\"") // Replace with your API key
-            buildConfigField("String", "GEMINI_API_KEY", "\"${System.getenv("AIzaSyCekWzR9iJ5ND4soW-HHFcF69o7jezFCOs") ?: ""}\"")
+            buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyCekWzR9iJ5ND4soW-HHFcF69o7jezFCOs\"")
         }
     }
     compileOptions {
@@ -110,5 +110,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+    implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
 }
 

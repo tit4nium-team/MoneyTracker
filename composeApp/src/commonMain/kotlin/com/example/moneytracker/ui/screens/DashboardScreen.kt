@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.Transaction
@@ -32,12 +34,14 @@ import com.example.moneytracker.viewmodel.TransactionState
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.BudgetViewModel
+import com.example.moneytracker.service.GeminiServiceFactory
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,6 +125,7 @@ fun DashboardScreen(
                     onDeleteTransaction = { viewModel.deleteTransaction(it) },
                     modifier = Modifier.fillMaxSize()
                 )
+
                 2 -> BudgetOverviewTab(
                     budgets = budgetState.budgets,
                     transactions = state.transactions,
@@ -137,7 +142,6 @@ private fun CategoryBreakdownTab(
     categories: List<TransactionCategory>,
     modifier: Modifier = Modifier
 ) {
-    // Calculate category totals
     val categoryTotals = remember(state.transactions) {
         state.transactions
             .filter { it.type == TransactionType.EXPENSE }
@@ -147,65 +151,123 @@ private fun CategoryBreakdownTab(
             }
     }
 
-    Column(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Category Breakdown Card
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                if (categoryTotals.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.DateRange,
-                                contentDescription = null,
-                                modifier = Modifier.size(48.dp),
-                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
-                            Text(
-                                text = "Nenhuma transação registrada ainda",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "Divisão por categoria",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+        // Quick Insight Card
+        item {
+            QuickInsightCard(transactions = state.transactions)
+        }
 
-                    categoryTotals.forEach { (category, amount) ->
-                        CategoryProgressItem(
-                            category = category,
-                            amount = amount,
-                            totalExpenses = state.totalExpenses
+        // Category Breakdown Card
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                ) {
+                    if (categoryTotals.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.DateRange,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                                Text(
+                                    text = "Nenhuma transação registrada ainda",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                )
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = "Divisão por categoria",
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
+
+                        categoryTotals.forEach { (category, amount) ->
+                            CategoryProgressItem(
+                                category = category,
+                                amount = amount,
+                                totalExpenses = state.totalExpenses
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickInsightCard(transactions: List<Transaction>) {
+    var insight by remember { mutableStateOf("Analisando suas finanças...") }
+    var isLoading by remember { mutableStateOf(true) }
+    val geminiService = remember { GeminiServiceFactory.getInstance() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(transactions) {
+        isLoading = true
+        scope.launch {
+            insight = geminiService.generateFinancialInsights(transactions)
+            isLoading = false
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+            Text(
+                text = insight,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
         }
     }
 }
@@ -217,33 +279,132 @@ private fun CategoryProgressItem(
     totalExpenses: Double
 ) {
     val percentage = if (totalExpenses > 0) (amount / totalExpenses) * 100 else 0.0
+    val categoryColor = getCategoryColor(category)
+    val categoryIcon = getCategoryIcon(category)
 
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(categoryColor.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = categoryIcon,
+                        contentDescription = null,
+                        tint = categoryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = category.displayName,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "R$ %.2f".format(amount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            }
             Text(
-                text = category.toString(),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Text(
-                text = "${String.format("%.1f", percentage)}%",
+                text = "%.1f%%".format(percentage),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = categoryColor,
+                fontWeight = FontWeight.Medium
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         LinearProgressIndicator(
             progress = (percentage / 100).toFloat(),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp)),
+            color = categoryColor,
+            trackColor = categoryColor.copy(alpha = 0.1f)
         )
     }
 }
+
+private fun getCategoryColor(category: TransactionCategory): Color {
+    return when (category) {
+        TransactionCategory.FOOD -> Color(0xFFF44336) // Vermelho
+        TransactionCategory.TRANSPORT -> Color(0xFF2196F3) // Azul
+        TransactionCategory.ENTERTAINMENT -> Color(0xFF9C27B0) // Roxo
+        TransactionCategory.SHOPPING -> Color(0xFFE91E63) // Rosa
+        TransactionCategory.HEALTH -> Color(0xFF4CAF50) // Verde
+        TransactionCategory.EDUCATION -> Color(0xFF3F51B5) // Índigo
+        TransactionCategory.BILLS -> Color(0xFFFF9800) // Laranja
+        TransactionCategory.SALARY -> Color(0xFF009688) // Verde-água
+        TransactionCategory.INVESTMENT -> Color(0xFF795548) // Marrom
+        TransactionCategory.HOUSING -> Color(0xFF8BC34A) // Verde-claro
+        TransactionCategory.CLOTHING -> Color(0xFFFF4081) // Rosa-escuro
+        TransactionCategory.PERSONAL_CARE -> Color(0xFF9575CD) // Roxo-claro
+        TransactionCategory.GIFTS -> Color(0xFFFFB74D) // Laranja-claro
+        TransactionCategory.PETS -> Color(0xFF4DB6AC) // Verde-água-claro
+        TransactionCategory.INSURANCE -> Color(0xFF90A4AE) // Azul-cinza-claro
+        TransactionCategory.SUBSCRIPTIONS -> Color(0xFF7E57C2) // Roxo-médio
+        else -> Color(0xFF607D8B) // Azul-cinza
+    }
+}
+
+private fun getCategoryIcon(category: TransactionCategory): ImageVector {
+    return when (category) {
+        TransactionCategory.FOOD -> Icons.Default.Add
+        TransactionCategory.TRANSPORT -> Icons.Default.Add
+        TransactionCategory.ENTERTAINMENT -> Icons.Default.Add
+        TransactionCategory.SHOPPING -> Icons.Default.Add
+        TransactionCategory.HEALTH -> Icons.Default.Add
+        TransactionCategory.EDUCATION -> Icons.Default.Add
+        TransactionCategory.BILLS -> Icons.Default.Add
+        TransactionCategory.SALARY -> Icons.Default.Add
+        TransactionCategory.INVESTMENT -> Icons.Default.Add
+        TransactionCategory.HOUSING -> Icons.Default.Add
+        TransactionCategory.CLOTHING -> Icons.Default.Add
+        TransactionCategory.PERSONAL_CARE -> Icons.Default.Add
+        TransactionCategory.GIFTS -> Icons.Default.Add
+        TransactionCategory.PETS -> Icons.Default.Add
+        TransactionCategory.INSURANCE -> Icons.Default.Add
+        TransactionCategory.SUBSCRIPTIONS -> Icons.Default.Add
+        else -> Icons.Default.Add
+    }
+}
+
+private val TransactionCategory.displayName: String
+    get() = when (this) {
+        TransactionCategory.FOOD -> "Alimentação"
+        TransactionCategory.TRANSPORT -> "Transporte"
+        TransactionCategory.ENTERTAINMENT -> "Entretenimento"
+        TransactionCategory.SHOPPING -> "Compras"
+        TransactionCategory.HEALTH -> "Saúde"
+        TransactionCategory.EDUCATION -> "Educação"
+        TransactionCategory.BILLS -> "Contas"
+        TransactionCategory.SALARY -> "Salário"
+        TransactionCategory.INVESTMENT -> "Investimentos"
+        TransactionCategory.HOUSING -> "Moradia"
+        TransactionCategory.CLOTHING -> "Vestuário"
+        TransactionCategory.PERSONAL_CARE -> "Cuidados Pessoais"
+        TransactionCategory.GIFTS -> "Presentes"
+        TransactionCategory.PETS -> "Animais de Estimação"
+        TransactionCategory.INSURANCE -> "Seguros"
+        TransactionCategory.SUBSCRIPTIONS -> "Assinaturas"
+        TransactionCategory.OTHER -> "Outros"
+        else -> "Outros"
+    }
 
 @Composable
 fun TransactionsTab(
@@ -564,16 +725,16 @@ private fun BalanceCard(state: TransactionState) {
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
                 text = "R$ ${String.format("%.2f", state.balance)}",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = if (state.balance >= 0) 
-                    MaterialTheme.colorScheme.primary 
+                color = if (state.balance >= 0)
+                    MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.error,
                 modifier = Modifier.alpha(animatedProgress)
             )
@@ -591,14 +752,14 @@ private fun BalanceCard(state: TransactionState) {
                     color = MaterialTheme.colorScheme.primary,
                     progress = animatedProgress
                 )
-                
+
                 Box(
                     modifier = Modifier
                         .height(50.dp)
                         .width(1.dp)
                         .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
                 )
-                
+
                 BalanceItem(
                     icon = Icons.Default.Delete,
                     label = "Despesas",
@@ -629,15 +790,15 @@ private fun BalanceItem(
             tint = color,
             modifier = Modifier.size(28.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
         )
-        
+
         Text(
             text = "R$ ${String.format("%.2f", value)}",
             style = MaterialTheme.typography.titleMedium,
@@ -717,9 +878,9 @@ private fun BudgetOverviewTab(
             items(budgets) { budget ->
                 BudgetOverviewCard(
                     budget = budget,
-                    transactions = transactions.filter { 
-                        it.category == budget.category && 
-                        it.type == TransactionType.EXPENSE 
+                    transactions = transactions.filter {
+                        it.category == budget.category &&
+                                it.type == TransactionType.EXPENSE
                     }
                 )
             }
@@ -809,16 +970,22 @@ private fun BudgetOverviewCard(
                         value = totalSpent,
                         color = if (isOverBudget) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     BudgetDetailRow(
                         label = "Restante",
                         value = remaining,
                         color = when {
                             isOverBudget -> MaterialTheme.colorScheme.error
-                            remaining < budget.amount * 0.2 -> MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
-                            remaining < budget.amount * 0.3 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            remaining < budget.amount * 0.2 -> MaterialTheme.colorScheme.error.copy(
+                                alpha = 0.7f
+                            )
+
+                            remaining < budget.amount * 0.3 -> MaterialTheme.colorScheme.primary.copy(
+                                alpha = 0.7f
+                            )
+
                             else -> MaterialTheme.colorScheme.primary
                         }
                     )
@@ -838,7 +1005,12 @@ private fun BudgetOverviewCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Orçamento excedido em R$ ${String.format("%.2f", -remaining)}",
+                                text = "Orçamento excedido em R$ ${
+                                    String.format(
+                                        "%.2f",
+                                        -remaining
+                                    )
+                                }",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
