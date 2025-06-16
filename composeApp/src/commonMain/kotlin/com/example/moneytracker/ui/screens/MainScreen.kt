@@ -3,7 +3,14 @@ package com.example.moneytracker.ui.screens
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.QuestionAnswer
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +63,7 @@ fun MainScreen(
                             onNavigate(Screen.MonthlyHistory.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Build, contentDescription = null) }
+                    icon = { Icon(Icons.Default.Assessment, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Insights") },
@@ -68,7 +75,7 @@ fun MainScreen(
                             onNavigate(Screen.Insights.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Build, contentDescription = null) }
+                    icon = { Icon(Icons.Default.Assessment, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Orçamentos") },
@@ -80,7 +87,7 @@ fun MainScreen(
                             onNavigate(Screen.Budget.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) }
+                    icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Pergunte ao Gil") },
@@ -92,7 +99,7 @@ fun MainScreen(
                             onNavigate(Screen.Chat.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.ThumbUp, contentDescription = null) }
+                    icon = { Icon(Icons.Default.QuestionAnswer, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Configurações") },
@@ -115,7 +122,7 @@ fun MainScreen(
                             drawerState.close()
                         }
                     },
-                    icon = { Icon(Icons.Default.ExitToApp, contentDescription = null) }
+                    icon = { Icon(Icons.Default.Logout, contentDescription = null) }
                 )
             }
         }
@@ -171,7 +178,7 @@ fun TransactionListItem2(
                 )
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
-                        Icons.Default.Delete,
+                        Icons.Default.Clear,
                         contentDescription = "Excluir transação",
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -262,7 +269,7 @@ private fun TransactionItem3(
                     )
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
-                            Icons.Default.Delete,
+                            Icons.Default.Clear,
                             contentDescription = "Delete transaction",
                             tint = MaterialTheme.colorScheme.error
                         )

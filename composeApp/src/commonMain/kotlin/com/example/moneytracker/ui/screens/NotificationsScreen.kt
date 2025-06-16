@@ -2,7 +2,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.InsertChart
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.Event
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -96,11 +102,11 @@ private fun NotificationCard(
                     Icon(
                         imageVector = when (notification.type) {
                             NotificationType.BUDGET_ALERT -> Icons.Default.Warning
-                            NotificationType.SPENDING_INSIGHT -> Icons.Default.Star
-                            NotificationType.SAVING_GOAL -> Icons.Default.Star
-                            NotificationType.BILL_REMINDER -> Icons.Default.DateRange
+                            NotificationType.SPENDING_INSIGHT -> Icons.Default.InsertChart
+                            NotificationType.SAVING_GOAL -> Icons.Default.AttachMoney
+                            NotificationType.BILL_REMINDER -> Icons.Default.Event
                             NotificationType.ACHIEVEMENT -> Icons.Default.Star
-                            NotificationType.TIP -> Icons.Default.Star
+                            NotificationType.TIP -> Icons.Default.Lightbulb
                         },
                         contentDescription = null,
                         tint = when (notification.type) {

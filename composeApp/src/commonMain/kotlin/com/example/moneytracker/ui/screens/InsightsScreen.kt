@@ -5,7 +5,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.InsertChart
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.MoneyOff
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -74,7 +83,7 @@ fun InsightsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Delete,
+                            imageVector = Icons.Default.Error,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(48.dp)
@@ -96,7 +105,7 @@ fun InsightsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowUp,
+                            imageVector = Icons.Default.InsertChart,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp)
@@ -201,10 +210,10 @@ private fun InsightCard(insight: Insight) {
                 ) {
                     Icon(
                         imageVector = when {
-                            insight.title.contains("economia", ignoreCase = true) -> Icons.Default.Add
-                            insight.title.contains("gasto", ignoreCase = true) -> Icons.Default.AccountCircle
-                            insight.title.contains("orçamento", ignoreCase = true) -> Icons.Default.Build
-                            else -> Icons.Default.Check
+                            insight.title.contains("economia", ignoreCase = true) -> Icons.Default.AttachMoney
+                            insight.title.contains("gasto", ignoreCase = true) -> Icons.Default.MoneyOff
+                            insight.title.contains("orçamento", ignoreCase = true) -> Icons.Default.AccountBalance
+                            else -> Icons.Default.TrendingUp
                         },
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
@@ -248,7 +257,7 @@ private fun InsightCard(insight: Insight) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MailOutline,
+                                    imageVector = Icons.Default.Lightbulb,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                                 )

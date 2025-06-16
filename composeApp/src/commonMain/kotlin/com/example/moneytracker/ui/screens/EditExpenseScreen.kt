@@ -7,12 +7,26 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.LocalHospital
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -192,12 +206,16 @@ fun EditExpenseScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = selectedCategory.icon?.let { Icons.Default.ShoppingCart } ?: Icons.Default.List,
-                                contentDescription = null
+                                imageVector = getCategoryIcon(selectedCategory.id),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                             Text(selectedCategory.name)
                         }
-                        Icon(Icons.Default.KeyboardArrowRight, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = "Selecionar categoria"
+                        )
                     }
                 }
 
@@ -268,7 +286,7 @@ fun EditExpenseScreen(
                             items(categories) { category ->
                                 CategoryItem(
                                     category = category,
-                                    isSelected = category.id == selectedCategory.id,
+                                    selected = category.id == selectedCategory.id,
                                     onClick = {
                                         selectedCategory = category
                                         showCategoryDialog = false
@@ -369,7 +387,7 @@ fun EditExpenseScreen(
 @Composable
 private fun CategoryItem(
     category: TransactionCategory,
-    isSelected: Boolean,
+    selected: Boolean,
     onClick: () -> Unit
 ) {
     Card(
@@ -377,7 +395,7 @@ private fun CategoryItem(
             .aspectRatio(1f)
             .padding(4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) 
+            containerColor = if (selected) 
                 MaterialTheme.colorScheme.primaryContainer 
             else MaterialTheme.colorScheme.surface
         ),
@@ -391,9 +409,9 @@ private fun CategoryItem(
             verticalArrangement = Arrangement.Center
         ) {
             Icon(
-                imageVector = category.icon?.let { Icons.Default.ShoppingCart } ?: Icons.Default.List,
+                imageVector = getCategoryIcon(category.id),
                 contentDescription = null,
-                tint = if (isSelected) 
+                tint = if (selected) 
                     MaterialTheme.colorScheme.onPrimaryContainer 
                 else MaterialTheme.colorScheme.onSurface
             )
@@ -401,7 +419,7 @@ private fun CategoryItem(
                 text = category.name,
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
-                color = if (isSelected) 
+                color = if (selected) 
                     MaterialTheme.colorScheme.onPrimaryContainer 
                 else MaterialTheme.colorScheme.onSurface
             )
@@ -429,5 +447,27 @@ private fun CalculatorButton(
             fontSize = 24.sp,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+private fun getCategoryIcon(categoryId: String): ImageVector {
+    return when (categoryId) {
+        "food" -> Icons.Default.Restaurant
+        "bills" -> Icons.Default.AccountBalance
+        "entertainment" -> Icons.Default.Favorite
+        "transport" -> Icons.Default.DirectionsCar
+        "shopping" -> Icons.Default.ShoppingCart
+        "salary" -> Icons.Default.AccountBalance
+        "health" -> Icons.Default.LocalHospital
+        "education" -> Icons.Default.School
+        "investment" -> Icons.Default.Assessment
+        "housing" -> Icons.Default.Home
+        "clothing" -> Icons.Default.Person
+        "personal_care" -> Icons.Default.Person
+        "gifts" -> Icons.Default.Favorite
+        "pets" -> Icons.Default.Pets
+        "insurance" -> Icons.Default.AccountBalance
+        "subscriptions" -> Icons.Default.Assessment
+        else -> Icons.Default.ShoppingCart
     }
 } 

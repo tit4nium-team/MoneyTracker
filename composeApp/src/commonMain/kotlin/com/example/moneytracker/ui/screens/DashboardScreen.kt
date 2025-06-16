@@ -13,7 +13,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -189,7 +198,7 @@ private fun CategoryBreakdownTab(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.DateRange,
+                                    Icons.Default.AccountBalance,
                                     contentDescription = null,
                                     modifier = Modifier.size(48.dp),
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -464,7 +473,7 @@ fun TransactionsTab(
                                     modifier = Modifier.size(16.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Close,
+                                        Icons.Default.Clear,
                                         contentDescription = "Excluir categoria",
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -658,7 +667,7 @@ fun TransactionListItem(
                 )
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
-                        Icons.Default.Delete,
+                        Icons.Default.Close,
                         contentDescription = "Excluir transação",
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -772,7 +781,7 @@ private fun BalanceCard(state: TransactionState) {
                 )
 
                 BalanceItem(
-                    icon = Icons.Default.Delete,
+                    icon = Icons.Default.Close,
                     label = "Despesas",
                     value = state.totalExpenses,
                     color = MaterialTheme.colorScheme.error,
@@ -850,7 +859,7 @@ private fun BudgetOverviewTab(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.AddCircle,
+                    Icons.Default.Add,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
@@ -938,10 +947,10 @@ private fun BudgetOverviewCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.Add,
+                        imageVector = Icons.Default.AccountBalance,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -1009,7 +1018,7 @@ private fun BudgetOverviewCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Warning,
+                                imageVector = Icons.Default.Info,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp)
