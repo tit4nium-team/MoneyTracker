@@ -723,8 +723,7 @@ private fun BalanceCard(state: TransactionState) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        )
     ) {
         Column(
             modifier = Modifier

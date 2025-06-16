@@ -1,5 +1,7 @@
 package com.example.moneytracker
 
+import LoginScreen
+import RegisterScreen
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.Box
@@ -22,6 +24,8 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Auth : Screen("auth")
+    object Login : Screen("login")
+    object Register : Screen("register")
     object Dashboard : Screen("dashboard")
     object EditExpense : Screen("edit_expense")
     object MonthlyHistory : Screen("monthly_history")
@@ -108,6 +112,36 @@ fun App() {
                     AuthScreen(
                         viewModel = authViewModel,
                         onAuthSuccess = {
+                            scope.launch {
+                                authRepository.getCurrentUserId()?.let { userId ->
+                                    transactionViewModel.setUserId(userId)
+                                    currentScreen = Screen.Dashboard
+                                }
+                            }
+                        },
+                        onNavigateToLogin = { currentScreen = Screen.Login },
+                        onNavigateToRegister = { currentScreen = Screen.Register }
+                    )
+                }
+                Screen.Login -> {
+                    LoginScreen(
+                        authViewModel = authViewModel,
+                        onNavigateToRegister = { currentScreen = Screen.Register },
+                        onLoginSuccess = {
+                            scope.launch {
+                                authRepository.getCurrentUserId()?.let { userId ->
+                                    transactionViewModel.setUserId(userId)
+                                    currentScreen = Screen.Dashboard
+                                }
+                            }
+                        }
+                    )
+                }
+                Screen.Register -> {
+                    RegisterScreen(
+                        authViewModel = authViewModel,
+                        onNavigateToLogin = { currentScreen = Screen.Login },
+                        onRegisterSuccess = {
                             scope.launch {
                                 authRepository.getCurrentUserId()?.let { userId ->
                                     transactionViewModel.setUserId(userId)

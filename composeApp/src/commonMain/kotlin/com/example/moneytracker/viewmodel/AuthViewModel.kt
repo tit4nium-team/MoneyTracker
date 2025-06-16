@@ -1,12 +1,14 @@
 package com.example.moneytracker.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.example.moneytracker.data.AuthRepository
-import com.example.moneytracker.data.RepositoryProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 sealed class AuthState {
     object Initial : AuthState()
@@ -16,48 +18,67 @@ sealed class AuthState {
 }
 
 class AuthViewModel(
-    private val repository: AuthRepository = RepositoryProvider.provideAuthRepository(),
+    private val repository: AuthRepository,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
 ) {
     private val _state = MutableStateFlow<AuthState>(AuthState.Initial)
     val state: StateFlow<AuthState> = _state
 
-    fun signIn(email: String, password: String) {
+    var isAuthenticated by mutableStateOf(false)
+        private set
+
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    fun login(email: String, password: String) {
         _state.value = AuthState.Loading
         scope.launch {
             repository.signIn(email, password)
                 .onSuccess { userId ->
+                    error = null
+                    isAuthenticated = true
                     _state.value = AuthState.Success(userId)
                 }
-                .onFailure { error ->
-                    _state.value = AuthState.Error(error.message ?: "Sign in failed")
+                .onFailure { e ->
+                    error = e.message ?: "Erro ao fazer login"
+                    isAuthenticated = false
+                    _state.value = AuthState.Error(e.message ?: "Erro ao fazer login")
                 }
         }
     }
 
-    fun signUp(email: String, password: String) {
+    fun register(name: String, email: String, password: String) {
         _state.value = AuthState.Loading
         scope.launch {
             repository.signUp(email, password)
                 .onSuccess { userId ->
+                    error = null
+                    isAuthenticated = true
                     _state.value = AuthState.Success(userId)
                 }
-                .onFailure { error ->
-                    _state.value = AuthState.Error(error.message ?: "Sign up failed")
+                .onFailure { e ->
+                    error = e.message ?: "Erro ao criar conta"
+                    isAuthenticated = false
+                    _state.value = AuthState.Error(e.message ?: "Erro ao criar conta")
                 }
         }
     }
 
-    fun signOut() {
-        _state.value = AuthState.Loading
+    fun logout() {
         scope.launch {
             repository.signOut()
-                .onSuccess {
-                    _state.value = AuthState.Initial
-                }
-                .onFailure { error ->
-                    _state.value = AuthState.Error(error.message ?: "Erro ao fazer logout")
-                }
+            isAuthenticated = false
+            error = null
+            _state.value = AuthState.Initial
+        }
+    }
+
+    fun signOut() {
+        scope.launch {
+            repository.signOut()
+            isAuthenticated = false
+            error = null
+            _state.value = AuthState.Initial
         }
     }
 } 
