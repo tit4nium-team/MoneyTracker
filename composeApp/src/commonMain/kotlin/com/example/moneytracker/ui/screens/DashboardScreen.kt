@@ -392,25 +392,26 @@ private fun getCategoryIcon(category: TransactionCategory): ImageVector {
 }
 
 private val TransactionCategory.displayName: String
-    get() = when (this) {
-        TransactionCategory.FOOD -> "Alimentação"
-        TransactionCategory.TRANSPORT -> "Transporte"
-        TransactionCategory.ENTERTAINMENT -> "Entretenimento"
-        TransactionCategory.SHOPPING -> "Compras"
-        TransactionCategory.HEALTH -> "Saúde"
-        TransactionCategory.EDUCATION -> "Educação"
-        TransactionCategory.BILLS -> "Contas"
-        TransactionCategory.SALARY -> "Salário"
-        TransactionCategory.INVESTMENT -> "Investimentos"
-        TransactionCategory.HOUSING -> "Moradia"
-        TransactionCategory.CLOTHING -> "Vestuário"
-        TransactionCategory.PERSONAL_CARE -> "Cuidados Pessoais"
-        TransactionCategory.GIFTS -> "Presentes"
-        TransactionCategory.PETS -> "Animais de Estimação"
-        TransactionCategory.INSURANCE -> "Seguros"
-        TransactionCategory.SUBSCRIPTIONS -> "Assinaturas"
-        TransactionCategory.OTHER -> "Outros"
-        else -> "Outros"
+    get() = when {
+        isCustom -> name // Se for uma categoria customizada, usa o nome direto
+        this == TransactionCategory.FOOD -> "Alimentação"
+        this == TransactionCategory.TRANSPORT -> "Transporte"
+        this == TransactionCategory.ENTERTAINMENT -> "Entretenimento"
+        this == TransactionCategory.SHOPPING -> "Compras"
+        this == TransactionCategory.HEALTH -> "Saúde"
+        this == TransactionCategory.EDUCATION -> "Educação"
+        this == TransactionCategory.BILLS -> "Contas"
+        this == TransactionCategory.SALARY -> "Salário"
+        this == TransactionCategory.INVESTMENT -> "Investimentos"
+        this == TransactionCategory.HOUSING -> "Moradia"
+        this == TransactionCategory.CLOTHING -> "Vestuário"
+        this == TransactionCategory.PERSONAL_CARE -> "Cuidados Pessoais"
+        this == TransactionCategory.GIFTS -> "Presentes"
+        this == TransactionCategory.PETS -> "Animais de Estimação"
+        this == TransactionCategory.INSURANCE -> "Seguros"
+        this == TransactionCategory.SUBSCRIPTIONS -> "Assinaturas"
+        this == TransactionCategory.OTHER -> "Outros"
+        else -> TransactionCategory.OTHER.displayName
     }
 
 @Composable
@@ -424,6 +425,11 @@ fun TransactionsTab(
 ) {
     var selectedCategory by remember { mutableStateOf<TransactionCategory?>(null) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showDeleteCategoryDialog by remember { mutableStateOf<TransactionCategory?>(null) }
+    var newCategoryName by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
         // Category filter chips
@@ -445,7 +451,27 @@ fun TransactionsTab(
                 FilterChip(
                     selected = selectedCategory?.id == category.id,
                     onClick = { selectedCategory = category },
-                    label = { Text(category.displayName) }
+                    label = {
+                        Row(
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(category.displayName)
+                            if (category.isCustom) {
+                                IconButton(
+                                    onClick = { showDeleteCategoryDialog = category },
+                                    modifier = Modifier.size(16.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = "Excluir categoria",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 )
             }
 
@@ -453,7 +479,7 @@ fun TransactionsTab(
                 FilterChip(
                     selected = false,
                     onClick = { showAddCategoryDialog = true },
-                    label = { Text("Add Category") },
+                    label = { Text("Nova Categoria") },
                     leadingIcon = {
                         Icon(
                             Icons.Default.Add,
@@ -474,28 +500,118 @@ fun TransactionsTab(
             transactions.filter { it.category.id == category.id }
         } ?: transactions
 
-        // Ordena as transações por data, da mais recente para a mais antiga
-        val sortedTransactions = filteredTransactions.sortedByDescending { transaction ->
-            try {
-                val pattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
-                val formatter = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
-                formatter.parse(transaction.date).time
-            } catch (e: Exception) {
-                0L // Em caso de erro no parsing da data, coloca no final da lista
-            }
-        }
-
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(sortedTransactions) { transaction ->
+            items(
+                items = filteredTransactions.sortedByDescending { it.date },
+                key = { it.id }
+            ) { transaction ->
                 TransactionListItem(
                     transaction = transaction,
                     onDelete = { onDeleteTransaction(transaction.id) }
                 )
             }
+        }
+
+        // Add Category Dialog
+        if (showAddCategoryDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddCategoryDialog = false },
+                title = { Text("Nova Categoria") },
+                text = {
+                    Column {
+                        OutlinedTextField(
+                            value = newCategoryName,
+                            onValueChange = { newCategoryName = it },
+                            label = { Text("Nome da Categoria") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        if (showError) {
+                            Text(
+                                text = errorMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (newCategoryName.isNotBlank()) {
+                                scope.launch {
+                                    categoryViewModel.addCategory(newCategoryName).collect { result ->
+                                        result.onSuccess {
+                                            showAddCategoryDialog = false
+                                            newCategoryName = ""
+                                            showError = false
+                                        }.onFailure { error ->
+                                            errorMessage = "Falha ao adicionar categoria: ${error.message}"
+                                            showError = true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        enabled = newCategoryName.isNotBlank()
+                    ) {
+                        Text("Adicionar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { 
+                            showAddCategoryDialog = false
+                            newCategoryName = ""
+                            showError = false
+                        }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
+
+        // Delete Category Dialog
+        showDeleteCategoryDialog?.let { category ->
+            AlertDialog(
+                onDismissRequest = { showDeleteCategoryDialog = null },
+                title = { Text("Excluir Categoria") },
+                text = { 
+                    Text(
+                        "Tem certeza que deseja excluir a categoria '${category.displayName}'? " +
+                        "Todas as transações desta categoria serão movidas para 'Outros'."
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            scope.launch {
+                                categoryViewModel.deleteCategory(category.id)
+                                showDeleteCategoryDialog = null
+                                if (selectedCategory?.id == category.id) {
+                                    selectedCategory = null
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Excluir")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteCategoryDialog = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
         }
     }
 }
