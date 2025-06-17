@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
@@ -87,6 +89,16 @@ android {
         buildConfig = true
     }
 
+    // Load local.properties
+    val localProperties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties") // Access file from root project
+
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { input ->
+            localProperties.load(input)
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -99,10 +111,10 @@ android {
         }
         getByName("debug") {
             // Add Firebase configuration for debug
-            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"moneytracker-5508d\"") // Replace with your project ID
-            buildConfigField("String", "FIREBASE_APP_ID", "\"1:534125893092:android:c6a74d7202b54b34fa23f1\"") // Replace with your app ID
-            buildConfigField("String", "FIREBASE_API_KEY", "\"AIzaSyBL1j9F1_ctko5TgFMh8bAbGiTe2t6B_H0\"") // Replace with your API key
-            buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyCekWzR9iJ5ND4soW-HHFcF69o7jezFCOs\"")
+            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""}\"") // Replace with your project ID
+            buildConfigField("String", "FIREBASE_APP_ID", "\"${localProperties.getProperty("FIREBASE_APP_ID") ?: ""}\"") // Replace with your app ID
+            buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY") ?: ""}\"") // Replace with your API key
+            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY") ?: ""}\"")
         }
     }
     compileOptions {

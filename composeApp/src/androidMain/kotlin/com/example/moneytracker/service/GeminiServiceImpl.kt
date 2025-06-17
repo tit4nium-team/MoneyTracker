@@ -9,6 +9,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import kotlin.math.abs
 import android.util.Log
+import com.example.moneytracker.config.ApiConfig
+
 
 internal class AndroidGeminiService {
     private var model: GenerativeModel? = null
@@ -31,7 +33,7 @@ internal class AndroidGeminiService {
         
         return GenerativeModel(
             modelName = modelName,
-            apiKey = BuildConfig.GEMINI_API_KEY
+            apiKey = ApiConfig.GEMINI_API_KEY
         )
     }
 

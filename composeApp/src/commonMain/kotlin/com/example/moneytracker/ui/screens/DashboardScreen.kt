@@ -18,8 +18,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Assessment
@@ -63,11 +61,12 @@ fun DashboardScreen(
     onAddTransaction: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToInsights: () -> Unit,
+    onNavigateToBudget: () -> Unit,
     onSignOut: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Dashboard", "Transactions", "Budget Overview")
+    val tabs = listOf("Dashboard", "Transações", "Orçamento")
     val state by viewModel.state.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val budgetState by budgetViewModel.state.collectAsState()
@@ -139,7 +138,7 @@ fun DashboardScreen(
                 2 -> BudgetOverviewTab(
                     budgets = budgetState.budgets,
                     transactions = state.transactions,
-                    onNavigateToBudget = { /* Implement navigation to BudgetScreen */ }
+                    onNavigateToBudget = onNavigateToBudget
                 )
             }
         }
@@ -245,8 +244,13 @@ private fun QuickInsightCard(transactions: List<Transaction>) {
         scope.launch {
             val insightsList = geminiService.generateFinancialInsights(transactions)
             insight = if (insightsList.isNotEmpty()) {
-                // Assuming Insight has a property that is a String, e.g., insight.text
-                insightsList.first().title // Or however you get the String representation
+                // Limita o texto a um tamanho razoável e adiciona reticências se necessário
+                val recommendation = insightsList.first().recommendation.orEmpty()
+                if (recommendation.length > 120) {
+                    recommendation.take(120) + "..."
+                } else {
+                    recommendation
+                }
             } else {
                 "Nenhum insight disponível." // Or some other default message
             }
@@ -260,29 +264,44 @@ private fun QuickInsightCard(transactions: List<Transaction>) {
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.Start
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Assessment,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Dica do Dia",
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowUp,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                )
             }
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = insight,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f),
+                modifier = Modifier.fillMaxWidth(),
+                lineHeight = MaterialTheme.typography.bodyMedium.fontSize * 1.5
             )
         }
     }
@@ -865,7 +884,7 @@ private fun BudgetOverviewTab(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Nenhum orçamento definido",
+                    text = "Você ainda não tem nenhum orçamento definido",
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
@@ -876,7 +895,13 @@ private fun BudgetOverviewTab(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Criar Orçamento")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Text("Definir Novo Orçamento")
+                    }
                 }
             }
         }

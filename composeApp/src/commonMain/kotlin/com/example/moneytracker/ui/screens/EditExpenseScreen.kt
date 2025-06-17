@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.moneytracker.model.TransactionCategory
@@ -275,13 +276,21 @@ fun EditExpenseScreen(
         if (showCategoryDialog) {
             AlertDialog(
                 onDismissRequest = { showCategoryDialog = false },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 title = { Text("Selecionar Categoria") },
                 text = {
-                    Column {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
+                            columns = GridCells.Fixed(1),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(400.dp)
                         ) {
                             items(categories) { category ->
                                 CategoryItem(
@@ -392,8 +401,8 @@ private fun CategoryItem(
 ) {
     Card(
         modifier = Modifier
-            .aspectRatio(1f)
-            .padding(4.dp),
+            .fillMaxWidth()
+            .height(60.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (selected) 
                 MaterialTheme.colorScheme.primaryContainer 
@@ -401,27 +410,29 @@ private fun CategoryItem(
         ),
         onClick = onClick
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = getCategoryIcon(category.id),
                 contentDescription = null,
                 tint = if (selected) 
                     MaterialTheme.colorScheme.onPrimaryContainer 
-                else MaterialTheme.colorScheme.onSurface
+                else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(24.dp)
             )
+            Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = category.name,
-                style = MaterialTheme.typography.bodySmall,
-                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyLarge,
                 color = if (selected) 
                     MaterialTheme.colorScheme.onPrimaryContainer 
-                else MaterialTheme.colorScheme.onSurface
+                else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
             )
         }
     }

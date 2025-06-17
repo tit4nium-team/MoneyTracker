@@ -1,7 +1,7 @@
 package com.example.moneytracker.service
 
 import android.util.Log
-import com.example.moneytracker.BuildConfig
+import com.example.moneytracker.config.ApiConfig
 import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,7 +27,7 @@ internal class AndroidGilService {
         
         return GenerativeModel(
             modelName = modelName,
-            apiKey = BuildConfig.GEMINI_API_KEY
+            apiKey = ApiConfig.GEMINI_API_KEY
         )
     }
 

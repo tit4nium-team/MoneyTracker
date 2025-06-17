@@ -63,7 +63,7 @@ fun MainScreen(
                             onNavigate(Screen.MonthlyHistory.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Assessment, contentDescription = null) }
+                    icon = { Icon(Icons.Default.Menu, contentDescription = null) }
                 )
                 NavigationDrawerItem(
                     label = { Text("Insights") },
@@ -134,6 +134,7 @@ fun MainScreen(
             onAddTransaction = { onNavigate(Screen.EditExpense.route) },
             onNavigateToHistory = { onNavigate(Screen.MonthlyHistory.route) },
             onNavigateToInsights = { onNavigate(Screen.Insights.route) },
+            onNavigateToBudget = { onNavigate(Screen.Budget.route) },
             onDrawerAction = { scope.launch { drawerState.open() } },
             onSignOut = {
                 scope.launch {
