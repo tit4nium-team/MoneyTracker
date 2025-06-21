@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.SavingsGoal
 import com.example.moneytracker.model.TransactionCategory
+import com.example.moneytracker.util.toCurrencyString
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
@@ -100,12 +101,10 @@ fun BudgetScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = {
-                        if (selectedMonth == Month.JANUARY) {
-                            selectedMonth = Month.DECEMBER
-                            selectedYear--
-                        } else {
-                            selectedMonth = selectedMonth.minus(1)
-                        }
+                        var current = LocalDate(selectedYear, selectedMonth, 1)
+                        current = current.minus(1, DateTimeUnit.MONTH)
+                        selectedMonth = current.month
+                        selectedYear = current.year
                     }) {
                         Icon(
                             painterResource(Res.drawable.ic_arrow_back),
@@ -125,12 +124,10 @@ fun BudgetScreen(
                     }
 
                     IconButton(onClick = {
-                        if (selectedMonth == Month.DECEMBER) {
-                            selectedMonth = Month.JANUARY
-                            selectedYear++
-                        } else {
-                            selectedMonth = selectedMonth.plus(1)
-                        }
+                        var current = LocalDate(selectedYear, selectedMonth, 1)
+                        current = current.plus(1, DateTimeUnit.MONTH)
+                        selectedMonth = current.month
+                        selectedYear = current.year
                     }) {
                         Icon(
                             painterResource(Res.drawable.ic_arrow_forward),
@@ -179,7 +176,7 @@ fun BudgetScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.spent })}",
+                                 text = "R$ ${state.budgets.sumOf { it.spent }.toCurrencyString()}",
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -203,7 +200,7 @@ fun BudgetScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Restante: R$ ${String.format("%.2f", state.budgets.sumOf { it.amount - it.spent })}",
+                        text = "Restante: R$ ${state.budgets.sumOf { it.amount - it.spent }.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (state.budgets.sumOf { it.amount - it.spent } < 0)
                             MaterialTheme.colorScheme.error
@@ -740,8 +737,8 @@ private fun SavingsGoalItem(goal: SavingsGoal, onDelete: () -> Unit) {
         headlineContent = { Text(goal.name) },
         supportingContent = {
             Column {
-                Text("Meta: R$ ${String.format("%.2f", goal.targetAmount)}")
-                Text("Atual: R$ ${String.format("%.2f", goal.currentAmount)}")
+                Text("Meta: R$ ${goal.targetAmount.toCurrencyString()}")
+                Text("Atual: R$ ${goal.currentAmount.toCurrencyString()}")
                 LinearProgressIndicator(
                     progress = progress.toFloat(),
                     modifier = Modifier

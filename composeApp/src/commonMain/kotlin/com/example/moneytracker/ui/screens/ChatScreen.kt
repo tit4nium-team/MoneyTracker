@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.moneytracker.model.ChatMessage
+import com.example.moneytracker.util.DateTimeUtil
 import com.example.moneytracker.viewmodel.ChatViewModel
 import kotlinx.coroutines.launch
 
@@ -211,14 +212,5 @@ private fun ChatMessageItem(message: ChatMessage) {
 }
 
 private fun formatChatDate(dateStr: String): String {
-    return try {
-        val pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
-        val formatter = java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault())
-        val date = formatter.parse(dateStr)
-        
-        val outputFormatter = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-        outputFormatter.format(date)
-    } catch (e: Exception) {
-        "agora"
-    }
-} 
+    return DateTimeUtil.formatChatTimestamp(dateStr)
+}

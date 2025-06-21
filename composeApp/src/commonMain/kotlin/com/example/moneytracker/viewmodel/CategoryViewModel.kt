@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.datetime.Clock
 
 class CategoryViewModel(
     private val repository: CategoryRepository = RepositoryProvider.provideCategoryRepository(),
@@ -35,7 +36,7 @@ class CategoryViewModel(
 
     fun addCategory(name: String, icon: String = "shopping_cart"): Flow<Result<Unit>> {
         val category = TransactionCategory(
-            id = "temp_${System.currentTimeMillis()}",
+            id = "temp_${Clock.System.now().toEpochMilliseconds()}",
             name = name,
             icon = icon,
             isCustom = true

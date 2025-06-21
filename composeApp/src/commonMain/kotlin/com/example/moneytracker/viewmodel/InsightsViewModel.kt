@@ -52,7 +52,7 @@ class InsightsViewModel(
                 "Oct" -> 10
                 "Nov" -> 11
                 "Dec" -> 12
-                else -> 1
+                else -> 1 // Should not happen with the regex
             }
             
             LocalDateTime(
@@ -65,12 +65,12 @@ class InsightsViewModel(
                 nanosecond = 0
             )
         } else {
-            // Fallback to epoch milliseconds
+            // Fallback to epoch milliseconds or current time if not parsable by regex
             try {
                 Instant.fromEpochMilliseconds(dateStr.toLong())
                     .toLocalDateTime(TimeZone.currentSystemDefault())
-            } catch (e: Exception) {
-                // If all parsing fails, return current date/time
+            } catch (e: NumberFormatException) { // More specific exception
+                // If not a valid Long, then it's an unparseable string format for this simplified parser
                 Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
             }
         }

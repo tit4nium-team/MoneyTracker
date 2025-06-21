@@ -15,6 +15,7 @@ import com.example.moneytracker.viewmodel.AuthViewModel
 import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.BudgetViewModel
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.coroutines.launch
 import moneytracker.composeapp.generated.resources.Res
 import moneytracker.composeapp.generated.resources.ic_account_balance
@@ -161,13 +162,8 @@ fun TransactionListItem2(
             ) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
-                        TransactionType.EXPENSE -> "-R$ ${
-                            String.format(
-                                "%.2f",
-                                transaction.amount
-                            )
-                        }"
+                        TransactionType.INCOME -> "+R$ ${transaction.amount.toCurrencyString()}"
+                        TransactionType.EXPENSE -> "-R$ ${transaction.amount.toCurrencyString()}"
                     },
                     color = when (transaction.type) {
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
@@ -246,19 +242,8 @@ private fun TransactionItem3(
                 ) {
                     Text(
                         text = when (transaction.type) {
-                            TransactionType.INCOME -> "+$${
-                                String.format(
-                                    "%.2f",
-                                    transaction.amount
-                                )
-                            }"
-
-                            TransactionType.EXPENSE -> "-$${
-                                String.format(
-                                    "%.2f",
-                                    transaction.amount
-                                )
-                            }"
+                            TransactionType.INCOME -> "+$${transaction.amount.toCurrencyString()}"
+                            TransactionType.EXPENSE -> "-$${transaction.amount.toCurrencyString()}"
                         },
                         color = when (transaction.type) {
                             TransactionType.INCOME -> MaterialTheme.colorScheme.primary

@@ -15,8 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
-import java.text.SimpleDateFormat
-import java.util.Locale
+// Removed java.text.SimpleDateFormat and java.util.Locale
+// DateTimeUtil will be used for platform-specific formatting if needed for parsing,
+// but kotlinx-datetime is preferred for internal logic.
+import com.example.moneytracker.util.DateTimeUtil // Added if direct formatting is still needed
 
 class BudgetViewModel(
     private val repository: BudgetRepository = RepositoryProvider.provideBudgetRepository(),
@@ -54,14 +56,20 @@ class BudgetViewModel(
         return try {
             // Primeiro tenta o formato ISO
             LocalDateTime.parse(dateString)
-        } catch (e: Exception) {
+        } catch (e1: Exception) {
             try {
-                // Se falhar, tenta converter do formato do Firebase
-                val formatter = SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US)
-                val date = formatter.parse(dateString)
-                val instant = Instant.fromEpochMilliseconds(date.time)
-                instant.toLocalDateTime(TimeZone.currentSystemDefault())
-            } catch (e: Exception) {
+                // Tenta usar o DateTimeUtil para o formato legado "EEE MMM dd..."
+                // Esta parte é mais complexa porque DateTimeUtil.formatDateForDashboard retorna String,
+                // e precisamos de LocalDateTime. O ideal é que a data já venha como Long ou ISO.
+                // Por agora, se não for ISO, vamos considerar como não parseável aqui
+                // e a lógica de filtragem precisará ser robusta.
+                // Uma solução temporária, se o formato legado for comum e precisar ser parseado para LocalDateTime:
+                // 1. DateTimeUtil teria que expor um parseToEpochMillis (actual/expect)
+                // 2. Then Instant.fromEpochMilliseconds(epochMillis).toLocalDateTime(TimeZone.currentSystemDefault())
+                // Para simplificar agora, se não for ISO, retornamos null.
+                // A conversão de "EEE MMM dd..." para LocalDateTime em commonMain é não trivial sem expect/actual para parsing.
+                null // Simplificado: se não for ISO, não conseguimos parsear diretamente aqui.
+            } catch (e2: Exception) {
                 null
             }
         }

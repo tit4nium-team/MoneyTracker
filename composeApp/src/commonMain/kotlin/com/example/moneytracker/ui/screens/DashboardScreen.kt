@@ -58,6 +58,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.semantics.text
+import com.example.moneytracker.util.DateTimeUtil
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -356,7 +358,7 @@ private fun CategoryProgressItem(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ %.2f".format(amount),
+                        text = "R$ ${amount.toCurrencyString()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -685,8 +687,8 @@ fun TransactionListItem(
             ) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
-                        TransactionType.EXPENSE -> "-R$ ${String.format("%.2f", transaction.amount)}"
+                        TransactionType.INCOME -> "+R$ ${transaction.amount.toCurrencyString()}"
+                        TransactionType.EXPENSE -> "-R$ ${transaction.amount.toCurrencyString()}"
                     },
                     color = when (transaction.type) {
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
@@ -730,16 +732,7 @@ fun TransactionListItem(
 }
 
 private fun formatDate(dateStr: String): String {
-    return try {
-        val inputPattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
-        val inputFormatter = java.text.SimpleDateFormat(inputPattern, java.util.Locale.US)
-        val date = inputFormatter.parse(dateStr)
-        
-        val outputFormatter = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
-        outputFormatter.format(date)
-    } catch (e: Exception) {
-        dateStr // Retorna a string original em caso de erro
-    }
+    return DateTimeUtil.formatDateForDashboard(dateStr)
 }
 
 @Composable
@@ -778,7 +771,7 @@ private fun BalanceCard(state: TransactionState) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "R$ ${String.format("%.2f", state.balance)}",
+                text = "R$ ${state.balance.toCurrencyString()}",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -849,7 +842,7 @@ private fun BalanceItem(
         )
 
         Text(
-            text = "R$ ${String.format("%.2f", value)}",
+            text = "R$ ${value.toCurrencyString()}",
             style = MaterialTheme.typography.titleMedium,
             color = color,
             fontWeight = FontWeight.Bold
@@ -995,7 +988,7 @@ private fun BudgetOverviewCard(
                     )
                 }
                 Text(
-                    text = "R$ ${String.format("%.2f", budget.amount)}",
+                     text = "R$ ${budget.amount.toCurrencyString()}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -1060,12 +1053,7 @@ private fun BudgetOverviewCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Orçamento excedido em R$ ${
-                                    String.format(
-                                        "%.2f",
-                                        -remaining
-                                    )
-                                }",
+                                text = "Orçamento excedido em R$ ${(-remaining).toCurrencyString()}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -1094,10 +1082,10 @@ private fun BudgetDetailRow(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
         Text(
-            text = "R$ ${String.format("%.2f", value)}",
+            text = "R$ ${value.toCurrencyString()}",
             style = MaterialTheme.typography.bodyLarge,
             color = color,
             fontWeight = FontWeight.Medium
         )
     }
-} 
+}

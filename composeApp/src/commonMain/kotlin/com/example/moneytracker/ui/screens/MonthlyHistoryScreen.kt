@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionType
+import com.example.moneytracker.util.toCurrencyString
 import com.example.moneytracker.viewmodel.TransactionState
 import kotlinx.datetime.*
 
@@ -184,7 +185,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", totalIncome)}",
+                        text = "R$ ${totalIncome.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -195,7 +196,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", totalExpenses)}",
+                        text = "R$ ${totalExpenses.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -206,7 +207,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", balance)}",
+                        text = "R$ ${balance.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
@@ -234,8 +235,8 @@ private fun MonthlyHistoryCard(
                     }
                     Text(
                         text = when (transaction.type) {
-                            TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
-                            TransactionType.EXPENSE -> "-R$ ${String.format("%.2f", transaction.amount)}"
+                            TransactionType.INCOME -> "+R$ ${transaction.amount.toCurrencyString()}"
+                            TransactionType.EXPENSE -> "-R$ ${transaction.amount.toCurrencyString()}"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = when (transaction.type) {
