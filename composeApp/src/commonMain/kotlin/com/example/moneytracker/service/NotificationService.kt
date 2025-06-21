@@ -2,6 +2,8 @@ import androidx.compose.runtime.remember
 import com.example.moneytracker.data.AuthRepository
 import com.example.moneytracker.data.BudgetRepository
 import com.example.moneytracker.data.TransactionRepository
+import com.example.moneytracker.model.Notification
+import com.example.moneytracker.model.NotificationType
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.util.toCurrencyString
 import kotlinx.coroutines.flow.first

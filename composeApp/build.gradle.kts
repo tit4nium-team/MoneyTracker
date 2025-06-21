@@ -63,7 +63,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
                 implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
                 val composeMaterialVersion = "1.5.4"
-                implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
+                //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
             }
         }
         commonTest.dependencies {
