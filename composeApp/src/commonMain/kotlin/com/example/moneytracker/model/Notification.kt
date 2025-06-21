@@ -1,4 +1,4 @@
-package com.example.moneytracker.model
+package com.example.moneytracker.model // Adicionado o package declaration se não existir
 
 import kotlinx.datetime.Clock
 
@@ -13,10 +13,10 @@ data class Notification(
 )
 
 enum class NotificationType {
-    BUDGET_ALERT,
-    SPENDING_INSIGHT,
-    SAVING_GOAL,
-    BILL_REMINDER,
-    ACHIEVEMENT,
-    TIP
+    BUDGET_ALERT,      // Alertas de orçamento próximo do limite
+    SPENDING_INSIGHT,  // Insights sobre gastos
+    SAVING_GOAL,      // Metas de economia
+    BILL_REMINDER,    // Lembretes de contas
+    ACHIEVEMENT,      // Conquistas e marcos
+    TIP              // Dicas financeiras
 }

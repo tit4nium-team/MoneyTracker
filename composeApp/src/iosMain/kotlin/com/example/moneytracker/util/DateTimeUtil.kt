@@ -2,19 +2,17 @@ package com.example.moneytracker.util
 
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSDate
-import platform.Foundation.NSNumber
-import platform.Foundation.numberWithLongLong
+// NSNumber and numberWithLongLong are not directly used for date formatting with NSDateFormatter
+// import platform.Foundation.NSNumber
+// import platform.Foundation.numberWithLongLong
 import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.NSTimeZone
-import platform.Foundation.autoupdatingCurrentTimeZone
-import platform.Foundation.Locale
-import platform.Foundation.currentLocale
+// import platform.Foundation.autoupdatingCurrentTimeZone // Replaced
+import platform.Foundation.NSLocale // Correct import for NSLocale
+// import platform.Foundation.currentLocale // Replaced by NSLocale.currentLocale (property access)
 
 actual object DateTimeUtil {
     actual fun formatChatTimestamp(timestampString: String): String {
-        // iOS specific date formatting for chat timestamp
-        // Assuming timestampString is "yyyy-MM-dd'T'HH:mm:ss.SSSSSS" from Gemini
-        // This is a common ISO-like format.
         val dateFormatter = NSDateFormatter().apply {
             dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS"
             // locale = NSLocale.systemLocale // Use system locale if needed for parsing
@@ -25,8 +23,8 @@ actual object DateTimeUtil {
         return if (date != null) {
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "HH:mm"
-                locale = Locale.currentLocale()
-                timeZone = NSTimeZone.autoupdatingCurrentTimeZone()
+                locale = NSLocale.currentLocale() // Corrigido
+                timeZone = NSTimeZone.localTimeZone // Corrigido
             }
             outputFormatter.stringFromDate(date)
         } else {
@@ -35,43 +33,45 @@ actual object DateTimeUtil {
     }
 
     actual fun formatDateForDashboard(dateString: String): String {
-        // This function is tricky because the input `dateString` format was very specific
-        // "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy". NSDateFormatter might struggle with 'GMT'XXX.
-        // A more KMM-friendly approach is to work with epoch milliseconds (Long) in common code.
-
-        // First, try if it's an epoch Long string
         dateString.toLongOrNull()?.let { millis ->
             val date = NSDate.dateWithTimeIntervalSince1970(millis / 1000.0)
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy HH:mm"
-                locale = Locale.currentLocale()
-                timeZone = NSTimeZone.autoupdatingCurrentTimeZone()
+                locale = NSLocale.currentLocale() // Corrigido
+                timeZone = NSTimeZone.localTimeZone // Corrigido
             }
             return outputFormatter.stringFromDate(date)
         }
 
-        // Fallback: Attempt to parse the complex string. This might be brittle.
-        // "EEE MMM dd HH:mm:ss 'GMT'Z yyyy" is closer to what NSDateFormatter might expect for RFC 822
-        // or "EEE MMM dd HH:mm:ss zzz yyyy"
-        // The 'XXX' for ISO 8601 zone is often problematic across platforms.
-        // Let's try a common format it might handle, but this is a guess.
         val inputFormatter = NSDateFormatter().apply {
-            dateFormat = "EEE MMM dd HH:mm:ss ZZZZ yyyy" // Common format, ZZZZ for GMT+/-HHMM
-            locale = Locale("en_US_POSIX") // Important for fixed-format strings
+            // dateFormat = "EEE MMM dd HH:mm:ss ZZZZ yyyy"
+            // Using "en_US_POSIX" is crucial for fixed format date strings like this
+            // to prevent issues with user's locale/calendar settings.
+            locale = NSLocale.localeWithLocaleIdentifier("en_US_POSIX") // Corrigido
+            // Attempting to parse a complex format like "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
+            // can be very tricky with NSDateFormatter. 'XXX' is particularly problematic.
+            // A common pattern that sometimes works for GMT offsets:
+            dateFormat = "EEE MMM dd HH:mm:ss Z yyyy" // Z, ZZ, ZZZ for RFC822 style timezone, ZZZZ for GMT, ZZZZZ for ISO8601
+                                                      // Let's try with Z, then ZZZZ if it fails.
         }
         var date = inputFormatter.dateFromString(dateString)
 
         if (date == null) {
+            inputFormatter.dateFormat = "EEE MMM dd HH:mm:ss ZZZZ yyyy"
+            date = inputFormatter.dateFromString(dateString)
+        }
+        if (date == null) {
             // Try another common variant if the first fails
-            inputFormatter.dateFormat = "EEE MMM dd HH:mm:ss zzz yyyy"
+            inputFormatter.dateFormat = "EEE MMM dd HH:mm:ss zzz yyyy" // zzz for general timezone like PST
              date = inputFormatter.dateFromString(dateString)
         }
+
 
         return if (date != null) {
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy HH:mm"
-                locale = Locale.currentLocale()
-                timeZone = NSTimeZone.autoupdatingCurrentTimeZone()
+                locale = NSLocale.currentLocale() // Corrigido
+                timeZone = NSTimeZone.localTimeZone // Corrigido
             }
             outputFormatter.stringFromDate(date)
         } else {
@@ -84,8 +84,8 @@ actual object DateTimeUtil {
             val date = NSDate.dateWithTimeIntervalSince1970(timestamp / 1000.0)
             val formatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy"
-                locale = Locale.currentLocale()
-                timeZone = NSTimeZone.autoupdatingCurrentTimeZone()
+                locale = NSLocale.currentLocale() // Corrigido
+                timeZone = NSTimeZone.localTimeZone // Corrigido
             }
             formatter.stringFromDate(date)
         } catch (e: Exception) {

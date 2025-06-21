@@ -3,6 +3,7 @@ package com.example.moneytracker.service
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.TransactionCategory
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.datetime.LocalDate
 
 data class UserFinancialContext(
@@ -72,7 +73,7 @@ abstract class GilService {
     }
 
     private fun formatMoney(value: Double): String {
-        return "%.2f".format(value).replace(".", ",")
+        return value.toCurrencyString()
     }
 }
 
