@@ -2,11 +2,12 @@ package com.example.moneytracker.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_person
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,7 +35,7 @@ fun AuthScreen(
         ) {
             // Logo e Título
             Icon(
-                imageVector = Icons.Default.Email,
+                painter = painterResource(Res.drawable.ic_person),
                 contentDescription = null,
                 modifier = Modifier.size(96.dp),
                 tint = MaterialTheme.colorScheme.primary

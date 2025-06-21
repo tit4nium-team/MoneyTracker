@@ -8,11 +8,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import moneytracker.composeapp.generated.resources.ic_arrow_forward
+import moneytracker.composeapp.generated.resources.ic_person
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
@@ -46,7 +49,7 @@ fun ChatScreen(
                         onNavigateBack()
                     }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            painter = painterResource(Res.drawable.ic_arrow_back),
                             contentDescription = "Voltar"
                         )
                     }
@@ -97,7 +100,7 @@ fun ChatScreen(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Enviar")
+                        Icon(painterResource(Res.drawable.ic_arrow_forward), contentDescription = "Enviar")
                     }
                 }
             }
@@ -198,7 +201,7 @@ private fun ChatMessageItem(message: ChatMessage) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Person,
+                    painter = painterResource(Res.drawable.ic_person),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondary
                 )

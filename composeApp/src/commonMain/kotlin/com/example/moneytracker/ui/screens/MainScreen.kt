@@ -2,22 +2,12 @@ package com.example.moneytracker.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.QuestionAnswer
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionType
 import com.example.moneytracker.Screen
@@ -26,6 +16,14 @@ import com.example.moneytracker.viewmodel.TransactionViewModel
 import com.example.moneytracker.viewmodel.CategoryViewModel
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_account_balance
+import moneytracker.composeapp.generated.resources.ic_assessment
+import moneytracker.composeapp.generated.resources.ic_clear
+import moneytracker.composeapp.generated.resources.ic_close
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_menu
+import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +49,7 @@ fun MainScreen(
                         selectedItem = 0
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Default.Home, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_assessment), contentDescription = "Dashboard") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Histórico") },
@@ -63,7 +61,7 @@ fun MainScreen(
                             onNavigate(Screen.MonthlyHistory.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Menu, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_menu), contentDescription = "Histórico") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Insights") },
@@ -75,7 +73,7 @@ fun MainScreen(
                             onNavigate(Screen.Insights.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Assessment, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_assessment), contentDescription = "Insights") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Orçamentos") },
@@ -87,7 +85,7 @@ fun MainScreen(
                             onNavigate(Screen.Budget.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_account_balance), contentDescription = "Orçamentos") }
                 )
                 NavigationDrawerItem(
                     label = { Text("Pergunte ao Gil") },
@@ -99,7 +97,7 @@ fun MainScreen(
                             onNavigate(Screen.Chat.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.QuestionAnswer, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_info), contentDescription = "Pergunte ao Gil") } // Placeholder
                 )
                 NavigationDrawerItem(
                     label = { Text("Configurações") },
@@ -111,7 +109,7 @@ fun MainScreen(
                             onNavigate(Screen.Settings.route)
                         }
                     },
-                    icon = { Icon(Icons.Default.Settings, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_info), contentDescription = "Configurações") } // Placeholder
                 )
                 NavigationDrawerItem(
                     label = { Text("Sair") },
@@ -122,7 +120,7 @@ fun MainScreen(
                             drawerState.close()
                         }
                     },
-                    icon = { Icon(Icons.Default.Logout, contentDescription = null) }
+                    icon = { Icon(painterResource(Res.drawable.ic_close), contentDescription = "Sair") } // Placeholder
                 )
             }
         }
@@ -179,7 +177,7 @@ fun TransactionListItem2(
                 )
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
-                        Icons.Default.Clear,
+                        painterResource(Res.drawable.ic_clear),
                         contentDescription = "Excluir transação",
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -270,7 +268,7 @@ private fun TransactionItem3(
                     )
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(
-                            Icons.Default.Clear,
+                            painterResource(Res.drawable.ic_clear),
                             contentDescription = "Delete transaction",
                             tint = MaterialTheme.colorScheme.error
                         )

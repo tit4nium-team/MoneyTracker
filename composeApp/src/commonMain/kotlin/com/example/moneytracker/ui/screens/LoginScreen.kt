@@ -4,13 +4,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_person
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
@@ -55,7 +55,7 @@ fun LoginScreen(
         ) {
             // Logo e Título
             Icon(
-                imageVector = Icons.Default.Lock,
+                painter = painterResource(Res.drawable.ic_info), // Placeholder for Lock
                 contentDescription = null,
                 modifier = Modifier.size(72.dp),
                 tint = MaterialTheme.colorScheme.primary
@@ -103,7 +103,7 @@ fun LoginScreen(
                 label = { Text("Senha") },
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        painter = painterResource(Res.drawable.ic_person), // Placeholder for Email
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
