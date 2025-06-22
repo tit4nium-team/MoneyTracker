@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
 class CategoryViewModel(
@@ -55,7 +56,7 @@ class CategoryViewModel(
         // Adicionar try-catch aqui não faria muito sentido para a exceção da dummy,
         // pois ela está encapsulada no Result que o Flow emite.
         if (userId == null) return MutableStateFlow(Result.failure(IllegalStateException("User not logged in")))
-        return repository.addCategory(userId!!, category)
+        return flow { repository.addCategory(userId!!, category) }
     }
 
     fun deleteCategory(categoryId: String) {

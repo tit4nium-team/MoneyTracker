@@ -31,7 +31,7 @@ class NotificationService(
                 .toLocalDateTime(TimeZone.currentSystemDefault())
                 .let { "${it.month.name} ${it.year}" }.toLocalDateTime()
 
-        val budgets = budgetRepository.getBudgets(
+        val budgets = budgetRepository.getMonthlyBudgetsFlow(
             userId = userId.orEmpty(),
             month = currentDate.monthNumber,
             year = currentDate.year

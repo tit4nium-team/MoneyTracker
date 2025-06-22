@@ -2,13 +2,10 @@ package com.example.moneytracker.data
 
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.SavingsGoal
-import com.example.moneytracker.model.TransactionCategory // Necessário se Budget tem TransactionCategory
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.where
-import dev.gitlive.firebase.firestore.orderBy // Se necessário para queries
-import dev.gitlive.firebase.firestore.Direction // Se necessário para queries
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -21,7 +18,7 @@ class FirebaseBudgetRepositoryImpl : BudgetRepository {
     // --- Flows para observação de listas ---
     override fun getBudgetsFlow(userId: String): Flow<List<Budget>> {
         return budgetsCollection()
-            .where("userId", isEqualTo = userId)
+            .where("userId", equalTo = userId)
             .snapshots
             .map { querySnapshot ->
                 querySnapshot.documents.map { it.data<Budget>() }
@@ -30,7 +27,7 @@ class FirebaseBudgetRepositoryImpl : BudgetRepository {
 
     override fun getSavingsGoalsFlow(userId: String): Flow<List<SavingsGoal>> {
         return savingsGoalsCollection()
-            .where("userId", isEqualTo = userId)
+            .where("userId", equalTo = userId)
             .snapshots
             .map { querySnapshot ->
                 querySnapshot.documents.map { it.data<SavingsGoal>() }
@@ -39,9 +36,9 @@ class FirebaseBudgetRepositoryImpl : BudgetRepository {
 
     override fun getMonthlyBudgetsFlow(userId: String, month: Int, year: Int): Flow<List<Budget>> {
         return budgetsCollection()
-            .where("userId", isEqualTo = userId)
-            .where("month", isEqualTo = month)
-            .where("year", isEqualTo = year)
+            .where("userId", equalTo = userId)
+            .where("month", equalTo = month)
+            .where("year", equalTo = year)
             .snapshots
             .map { querySnapshot ->
                 querySnapshot.documents.map { it.data<Budget>() }
@@ -92,7 +89,7 @@ class FirebaseBudgetRepositoryImpl : BudgetRepository {
             // Opcional: Verificar propriedade antes de deletar, se a regra de segurança do Firestore não for suficiente.
             val budgetToDelete = getBudget(budgetId).getOrNull()
             if (budgetToDelete?.userId != userId) {
-                return Result.failure(SecurityException("User not authorized to delete budget $budgetId or budget not found."))
+                return Result.failure(Exception("User not authorized to delete budget $budgetId or budget not found."))
             }
 
             budgetsCollection().document(budgetId).delete()
@@ -141,7 +138,7 @@ class FirebaseBudgetRepositoryImpl : BudgetRepository {
 
             val goalToDelete = getSavingsGoal(goalId).getOrNull()
             if (goalToDelete?.userId != userId) {
-                 return Result.failure(SecurityException("User not authorized to delete savings goal $goalId or goal not found."))
+                 return Result.failure(Exception("User not authorized to delete savings goal $goalId or goal not found."))
             }
 
             savingsGoalsCollection().document(goalId).delete()

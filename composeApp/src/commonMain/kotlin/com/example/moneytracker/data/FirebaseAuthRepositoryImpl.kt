@@ -21,7 +21,7 @@ class FirebaseAuthRepositoryImpl : AuthRepository {
         } catch (e: FirebaseAuthException) {
             // A lib dev.gitlive pode ter seus próprios tipos de exceção.
             // É bom capturá-los especificamente se você quiser tratar códigos de erro.
-            Result.failure(Exception("Firebase KMP signIn failed: ${e.message} (Code: ${e.code})", e))
+            Result.failure(Exception("Firebase KMP signIn failed: ${e.message} (Code: ${e.cause})", e))
         } catch (e: Exception) {
             // Captura geral para outros erros inesperados.
             Result.failure(Exception("An unexpected error occurred during KMP signIn: ${e.message}", e))
@@ -35,7 +35,7 @@ class FirebaseAuthRepositoryImpl : AuthRepository {
                 Result.success(it)
             } ?: Result.failure(Exception("Firebase KMP signUp did not return a user or UID."))
         } catch (e: FirebaseAuthException) {
-            Result.failure(Exception("Firebase KMP signUp failed: ${e.message} (Code: ${e.code})", e))
+            Result.failure(Exception("Firebase KMP signUp failed: ${e.message} (Code: ${e.cause})", e))
         } catch (e: Exception) {
             Result.failure(Exception("An unexpected error occurred during KMP signUp: ${e.message}", e))
         }

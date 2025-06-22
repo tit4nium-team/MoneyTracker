@@ -78,9 +78,9 @@ class BudgetViewModel(
     fun loadBudgets(month: Int, year: Int) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
-            
+
             combine(
-                repository.getBudgets(userId, month, year),
+                repository.getMonthlyBudgetsFlow(userId, month, year),
                 transactionRepository.getTransactionsFlow(userId)
             ) { budgets, transactions ->
                 budgets.map { budget ->
@@ -89,13 +89,13 @@ class BudgetViewModel(
                             val transactionDate = parseTransactionDate(transaction.date)
                             transactionDate?.let { date ->
                                 transaction.category.id == budget.category.id &&
-                                transaction.type == TransactionType.EXPENSE &&
-                                date.month.ordinal == month &&
-                                date.year == year
+                                        transaction.type == TransactionType.EXPENSE &&
+                                        date.month.ordinal == month &&
+                                        date.year == year
                             } ?: false
                         }
                         .sumOf { it.amount }
-                    
+
                     budget.copy(spent = spent)
                 }
             }.collect { budgetsWithSpent ->
@@ -127,7 +127,7 @@ class BudgetViewModel(
                             month = monthIndex,
                             year = year
                         )
-                        repository.createBudget(budget) // Pode lançar no iOS
+                        repository.addBudget(budget) // Pode lançar no iOS
                     }
                 } else {
                     // Criar orçamento apenas para o mês selecionado
@@ -138,13 +138,18 @@ class BudgetViewModel(
                         month = month,
                         year = year
                     )
-                    repository.createBudget(budget) // Pode lançar no iOS
+                    repository.addBudget(budget) // Pode lançar no iOS
                 }
                 // Recarrega os orçamentos do mês atual após criar (se não houve exceção)
                 loadBudgets(month, year)
             } catch (e: Exception) {
                 println("Error in BudgetViewModel.createBudget: ${e.message}")
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao criar orçamento") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Erro ao criar orçamento"
+                    )
+                }
             }
         }
     }
@@ -154,11 +159,16 @@ class BudgetViewModel(
             try {
                 _state.update { it.copy(isLoading = true, error = null) }
                 repository.updateBudget(budget.copy(amount = newAmount)) // Pode lançar no iOS
-                 // Recarregar orçamentos se necessário, e se a operação for bem-sucedida
+                // Recarregar orçamentos se necessário, e se a operação for bem-sucedida
                 loadBudgets(budget.month, budget.year)
             } catch (e: Exception) {
                 println("Error in BudgetViewModel.updateBudget: ${e.message}")
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao atualizar orçamento") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Erro ao atualizar orçamento"
+                    )
+                }
             }
         }
     }
@@ -171,17 +181,23 @@ class BudgetViewModel(
         viewModelScope.launch {
             try {
                 _state.update { it.copy(isLoading = true, error = null) }
-                repository.deleteBudget(budgetId) // Pode lançar no iOS
+                repository.deleteBudget(budgetId, userId) // Pode lançar no iOS
                 // Recarregar orçamentos. Idealmente, saber qual mês/ano.
                 // Usando o mês/ano atual do estado como fallback.
                 val currentMonth = _state.value.budgets.firstOrNull()?.month
-                                   ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).month.ordinal
+                    ?: Clock.System.now()
+                        .toLocalDateTime(TimeZone.currentSystemDefault()).month.ordinal
                 val currentYear = _state.value.budgets.firstOrNull()?.year
-                                  ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
+                    ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).year
                 loadBudgets(currentMonth, currentYear)
             } catch (e: Exception) {
                 println("Error in BudgetViewModel.deleteBudget: ${e.message}")
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao deletar orçamento") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Erro ao deletar orçamento"
+                    )
+                }
             }
         }
     }
@@ -202,24 +218,33 @@ class BudgetViewModel(
                     }
                 } catch (e: Exception) { // Improvável para emptyFlow, mas bom ter.
                     println("Error in BudgetViewModel.loadSavingsGoals: ${e.message}")
-                    _state.update { it.copy(error = e.message ?: "Erro ao carregar metas de economia") }
+                    _state.update {
+                        it.copy(
+                            error = e.message ?: "Erro ao carregar metas de economia"
+                        )
+                    }
                 }
             }
         }
     }
 
     fun addBudget(category: TransactionCategory, amount: Double): Flow<Result<Unit>> {
-        val budget = Budget(category = category, amount = amount, month = currentDate.monthNumber, year = currentDate.year)
+        val budget = Budget(
+            category = category,
+            amount = amount,
+            month = currentDate.monthNumber,
+            year = currentDate.year
+        )
         // A dummy já retorna Flow<Result.failure>
         if (this.userId.isBlank()) return MutableStateFlow(Result.failure(IllegalStateException("User not logged in")))
-        return repository.addBudget(this.userId, budget)
+        return flow { repository.addBudget(budget) }
     }
 
     fun addSavingsGoal(name: String, targetAmount: Double): Flow<Result<Unit>> {
         val goal = SavingsGoal(name = name, targetAmount = targetAmount, currentAmount = 0.0)
         // A dummy já retorna Flow<Result.failure>
         if (this.userId.isBlank()) return MutableStateFlow(Result.failure(IllegalStateException("User not logged in")))
-        return repository.addSavingsGoal(this.userId, goal)
+        return flow { repository.addSavingsGoal(goal) }
     }
 
     fun updateSavingsGoal(name: String, targetAmount: Double, currentAmount: Double) {
@@ -227,12 +252,21 @@ class BudgetViewModel(
             scope.launch {
                 try {
                     _state.update { it.copy(isLoading = true, error = null) }
-                    val goal = SavingsGoal(name = name, targetAmount = targetAmount, currentAmount = currentAmount)
-                    repository.updateSavingsGoal(uid, goal) // Pode lançar no iOS
+                    val goal = SavingsGoal(
+                        name = name,
+                        targetAmount = targetAmount,
+                        currentAmount = currentAmount
+                    )
+                    repository.updateSavingsGoal(goal) // Pode lançar no iOS
                     loadSavingsGoals() // Recarrega se bem-sucedido
                 } catch (e: Exception) {
                     println("Error in BudgetViewModel.updateSavingsGoal: ${e.message}")
-                    _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao atualizar meta de economia") }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = e.message ?: "Erro ao atualizar meta de economia"
+                        )
+                    }
                 }
             }
         }
@@ -247,7 +281,12 @@ class BudgetViewModel(
                     loadSavingsGoals() // Recarrega se bem-sucedido
                 } catch (e: Exception) {
                     println("Error in BudgetViewModel.deleteSavingsGoal: ${e.message}")
-                    _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao deletar meta de economia") }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = e.message ?: "Erro ao deletar meta de economia"
+                        )
+                    }
                 }
             }
         }

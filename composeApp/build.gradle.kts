@@ -7,18 +7,6 @@ plugins {
     alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.kotlinxserialization)
     id("com.google.gms.google-services")
-    id("dev.gitlive.firebase.plugin") version "1.11.1" // Adicionado plugin dev.gitlive
-}
-
-// Configuração para a biblioteca dev.gitlive.firebase (ajustar versões conforme necessário)
-firebase {
-    android {
-        // libraryVersion = "32.7.4" // Exemplo: Alinhar com o BOM do Firebase Android
-    }
-    ios {
-        // libraryVersion = "10.22.0" // Exemplo: Versão recente do Firebase iOS SDK
-        // useFrameworks = true // Se necessário para seus pods
-    }
 }
 
 kotlin {
@@ -78,6 +66,10 @@ kotlin {
                 implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
                 val composeMaterialVersion = "1.5.4"
                 //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
+                implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
+                implementation("dev.gitlive:firebase-common:2.1.0")// This line
+                implementation("dev.gitlive:firebase-auth:2.1.0")// This line
+                implementation("dev.gitlive:firebase-firestore:2.1.0")// This line
             }
         }
         commonTest.dependencies {

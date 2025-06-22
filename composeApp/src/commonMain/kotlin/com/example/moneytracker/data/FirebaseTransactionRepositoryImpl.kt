@@ -7,7 +7,6 @@ import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
 import dev.gitlive.firebase.firestore.FirebaseFirestore
 import dev.gitlive.firebase.firestore.where
-import dev.gitlive.firebase.firestore.orderBy
 import dev.gitlive.firebase.firestore.Direction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -23,7 +22,7 @@ private data class FirestoreTransaction(
     val description: String,
     val date: String, // Mantendo como String por enquanto, conforme modelo original
     val userId: String,
-    @dev.gitlive.firebase.firestore.DocumentId val id: String? = null, // Para obter o ID do documento
+    val id: String? = null, // Para obter o ID do documento
      // Para ordenação, se a string 'date' não for suficiente, um timestamp real seria melhor
     val timestamp: dev.gitlive.firebase.firestore.Timestamp? = null
 )
@@ -38,7 +37,7 @@ class FirebaseTransactionRepositoryImpl : TransactionRepository {
 
     override fun getTransactionsFlow(userId: String): Flow<List<Transaction>> {
         return transactionsCollection()
-            .where("userId", isEqualTo = userId)
+            .where("userId", equalTo = userId)
             // A ordenação por 'date' (String) pode não ser cronologicamente precisa
             // a menos que o formato da string seja YYYY-MM-DD...
             // Idealmente, ordenar por um campo Timestamp real. Se 'timestamp' for adicionado:
@@ -127,8 +126,8 @@ class FirebaseTransactionRepositoryImpl : TransactionRepository {
     override suspend fun getTransactionsByCategory(userId: String, category: TransactionCategory): Result<List<Transaction>> {
         return try {
             val querySnapshot = transactionsCollection()
-                .where("userId", isEqualTo = userId)
-                .where("categoryId", isEqualTo = category.id)
+                .where("userId", equalTo = userId)
+                .where("categoryId", equalTo = category.id)
                 .orderBy("date", Direction.DESCENDING)
                 .get()
 
@@ -155,9 +154,9 @@ class FirebaseTransactionRepositoryImpl : TransactionRepository {
             // Queries de intervalo em campos de string são problemáticas se o formato não for YYYY-MM-DD...
             // Esta query pode não funcionar como esperado. Um campo Timestamp real é necessário para queries de data robustas.
             val querySnapshot = transactionsCollection()
-                .where("userId", isEqualTo = userId)
-                .where("date", isGreaterThanOrEqualTo = startDate)
-                .where("date", isLessThanOrEqualTo = endDate)
+                .where("userId", equalTo = userId)
+                .where("date", equalTo = startDate)
+                .where("date", equalTo = endDate)
                 .orderBy("date", Direction.DESCENDING)
                 .get()
 

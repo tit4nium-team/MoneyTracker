@@ -58,12 +58,12 @@ class TransactionViewModel(
     ): Boolean {
         val budget = budgets.value.budgets.find { it.category.id == category.id } ?: return false
         val monthStart = getCurrentMonthStart()
-        
+
         val monthlySpent = state.value.transactions
             .filter { transaction ->
                 transaction.category.id == category.id &&
-                transaction.type == TransactionType.EXPENSE &&
-                transaction.date.startsWith(formatDate(monthStart).substring(0, 7))
+                        transaction.type == TransactionType.EXPENSE &&
+                        transaction.date.startsWith(formatDate(monthStart).substring(0, 7))
             }
             .sumOf { it.amount }
 
@@ -93,14 +93,11 @@ class TransactionViewModel(
                 date = getCurrentDate(),
                 userId = uid
             )
-            repository.addTransaction(transaction).collect { result ->
-                trySend(result)
-                if (result.isSuccess) {
-                    loadTransactions()
-                }
+            repository.addTransaction(transaction).onSuccess {
+                loadTransactions()
             }
         } ?: trySend(Result.failure(IllegalStateException("User not logged in")))
-        
+
         awaitClose()
     }
 
@@ -114,7 +111,12 @@ class TransactionViewModel(
                 loadTransactions()
             } catch (e: Exception) {
                 println("Error in TransactionViewModel.deleteTransaction: ${e.message}")
-                _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao deletar transação") }
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Erro ao deletar transação"
+                    )
+                }
             }
         }
     }
@@ -132,19 +134,22 @@ class TransactionViewModel(
                         // se soubéssemos que estamos no iOS e a lista está vazia por causa da dummy.
                         _state.update { currentState ->
                             val income = transactions
-                            .filter { it.type == TransactionType.INCOME }
-                            .sumOf { it.amount }
-                        val expenses = transactions
-                            .filter { it.type == TransactionType.EXPENSE }
-                            .sumOf { it.amount }
-                        
-                        currentState.copy(
-                            transactions = transactions,
-                            totalIncome = income,
-                            totalExpenses = expenses,
-                            balance = income - expenses
-                        )
+                                .filter { it.type == TransactionType.INCOME }
+                                .sumOf { it.amount }
+                            val expenses = transactions
+                                .filter { it.type == TransactionType.EXPENSE }
+                                .sumOf { it.amount }
+
+                            currentState.copy(
+                                transactions = transactions,
+                                totalIncome = income,
+                                totalExpenses = expenses,
+                                balance = income - expenses
+                            )
+                        }
                     }
+                } catch (e: Exception) {
+
                 }
             }
         }

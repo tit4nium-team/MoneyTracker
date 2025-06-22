@@ -15,7 +15,7 @@ private data class FirestoreCustomCategory(
     val name: String,
     val icon: String,
     val userId: String,
-    @dev.gitlive.firebase.firestore.DocumentId val id: String? = null
+    val id: String? = null
     // 'isCustom' é implícito porque apenas categorias customizadas são salvas.
 )
 
@@ -26,7 +26,7 @@ class FirebaseCategoryRepositoryImpl : CategoryRepository {
 
     override fun getCategoriesFlow(userId: String): Flow<List<TransactionCategory>> {
         return categoriesCollection()
-            .where("userId", isEqualTo = userId)
+            .where("userId", equalTo = userId)
             .snapshots
             .map { querySnapshot ->
                 val customCategories = querySnapshot.documents.mapNotNull { documentSnapshot ->
@@ -92,7 +92,7 @@ class FirebaseCategoryRepositoryImpl : CategoryRepository {
                     docRef.delete()
                     Result.success(Unit)
                 } else {
-                    Result.failure(SecurityException("Unauthorized to delete category $categoryId. Belongs to another user."))
+                    Result.failure(Exception("Unauthorized to delete category $categoryId. Belongs to another user."))
                 }
             } else {
                 Result.failure(NoSuchElementException("Category $categoryId not found."))
