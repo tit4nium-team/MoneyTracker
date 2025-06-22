@@ -3,19 +3,20 @@ package com.example.moneytracker.data
 actual class RepositoryProvider {
     actual companion object {
         actual fun provideTransactionRepository(): TransactionRepository {
-            TODO("Not yet implemented")
+            TODO("Transações: Not yet implemented for iOS. This will cause a crash if called.")
         }
 
         actual fun provideCategoryRepository(): CategoryRepository {
-            TODO("Not yet implemented")
+            TODO("Categorias: Not yet implemented for iOS. This will cause a crash if called.")
         }
 
         actual fun provideAuthRepository(): AuthRepository {
-            TODO("Not yet implemented")
+            println("INFO: Usando IosAuthRepositoryDummy para AuthRepository no iOS")
+            return IosAuthRepositoryDummy()
         }
 
         actual fun provideBudgetRepository(): BudgetRepository {
-            TODO("Not yet implemented")
+            TODO("Orçamento: Not yet implemented for iOS. This will cause a crash if called.")
         }
     }
 }
