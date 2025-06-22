@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.compose)
     alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.kotlinxserialization)
-    id("com.google.gms.google-services")
+    // id("com.google.gms.google-services") // Removido/Comentado - Verificar se é usado por outros serviços Firebase
 }
 
 kotlin {
@@ -39,19 +39,33 @@ kotlin {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
-                // Firebase BoM
-                implementation(platform(libs.firebase.bom))
-                // Firebase Vertex AI (Gemini) SDK
-                implementation(libs.firebase.vertexai)
-                // Outras dependências Firebase que você já usa
+                // Remover Firebase BoM e Vertex AI
+                // implementation(platform(libs.firebase.bom)) // REMOVIDO
+                // implementation(libs.firebase.vertexai)      // REMOVIDO
+
+                // Adicionar SDK base do Google AI para Android
+                implementation(libs.generativeai) // Para com.google.ai.client.generativeai
+                implementation(libs.ktor.client.cio) // Ktor client engine for Android/JVM
+
+                // Outras dependências Firebase que você já usa (MANTER SE NECESSÁRIO)
+                // Se estas também não forem necessárias sem o Firebase VertexAI, podem ser removidas.
+                // Por enquanto, vou assumir que podem ser necessárias para outros fins.
                 implementation("com.google.firebase:firebase-analytics-ktx")
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+                // Dependências dev.gitlive:firebase-* são para KMP Firebase, podem permanecer se você as usa.
+                // Elas não são para o Gemini SDK que estamos configurando.
             }
         }
         val commonMain by getting {
             dependencies {
-                implementation("dev.gitlive:firebase-auth:1.11.1") // Adicionado dev.gitlive
-                implementation("dev.gitlive:firebase-firestore:1.11.1") // Adicionado dev.gitlive
+                // Dependências dev.gitlive:firebase-* são para KMP Firebase.
+                // Se você usa Auth/Firestore via KMP (dev.gitlive), mantenha-as.
+                // Elas não conflitam diretamente com o SDK Gemini que será usado no androidMain.
+                implementation("dev.gitlive:firebase-auth:1.11.1")
+                implementation("dev.gitlive:firebase-firestore:1.11.1")
+                implementation("dev.gitlive:firebase-common:1.11.1") // Adicionada para consistência se as outras gitlive são usadas
+
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -61,22 +75,20 @@ kotlin {
                 implementation(libs.androidx.lifecycle.viewmodel)
                 implementation(libs.androidx.lifecycle.runtimeCompose)
                 implementation(projects.shared)
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
-                // Add any common dependencies here
-                // implementation(libs.generativeai) // REMOVED - Will use Firebase AI SDK
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // Already present, good for coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // Already present, good for JSON parsing
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
-                // Firebase dependencies - check if they are correctly scoped if not used in common for Gemini
-                implementation("dev.gitlive:firebase-firestore:1.11.1")
-                implementation("dev.gitlive:firebase-common:1.11.1")
-                implementation("dev.gitlive:firebase-auth:1.11.1")
+                // Ktor dependencies for commonMain (core, content-negotiation, json-serialization)
+                implementation(libs.ktor.client.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.serialization.kotlinx.json)
             }
         }
         val iosMain by getting {
             dependencies {
-                // If there are any iOS-specific dependencies for Gemini, add them here.
-                // api(libs.generativeai) // REMOVED
+                // Ktor client engine for iOS
+                implementation(libs.ktor.client.darwin)
             }
         }
         commonTest.dependencies {

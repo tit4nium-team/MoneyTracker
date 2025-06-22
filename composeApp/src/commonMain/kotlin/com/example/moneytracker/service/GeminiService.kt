@@ -96,23 +96,19 @@ import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
 
 
-// Adaptação da função parseDate para commonMain, assumindo formato ISO ou fallback.
-// Se o formato for "EEE MMM dd...", uma biblioteca KMP de parsing ou expect/actual será necessária.
+// Adaptação da função parseDate para commonMain.
+// CRÍTICO: Esta implementação assume que 'dateStr' está no formato ISO 8601 (ex: "2023-10-26T10:15:30Z").
+// Se o formato for diferente (ex: "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy" ou outros),
+// esta função falhará ou retornará resultados incorretos.
+// RECOMENDAÇÃO: Implemente expect/actual para parseDate se precisar de formatos complexos não-ISO,
+// ou garanta que as datas de entrada estejam sempre no formato ISO 8601.
 private fun commonParseDate(dateStr: String): LocalDateTime {
     return try {
         Instant.parse(dateStr).toLocalDateTime(TimeZone.currentSystemDefault())
     } catch (e: Exception) {
-        // Log ou tratamento de erro se necessário.
-        // Fallback para agora, mas idealmente deveria falhar ou ser mais específico.
-        try {
-            // Tentativa de um formato mais simples que pode vir de new Date().toString() de JS ou similar
-            // Ex: "Mon May 27 2024 12:34:56 GMT+0000 (Coordinated Universal Time)" - isso é complexo
-            // Para simplificar, se não for ISO, vamos apenas retornar o tempo atual como fallback.
-            // Uma solução robusta aqui é crucial se as datas não forem ISO.
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        } catch (e2: Exception) {
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        }
+        // TODO: Adicionar logging de erro mais robusto aqui ou lançar uma exceção customizada.
+        println("WARN: Falha ao parsear data '$dateStr' como ISO 8601. Usando data/hora atual como fallback. Isso pode levar a insights incorretos.")
+        Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
     }
 }
 

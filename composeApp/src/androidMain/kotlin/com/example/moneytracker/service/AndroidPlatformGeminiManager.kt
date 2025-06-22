@@ -16,19 +16,17 @@ import android.util.Log
 // import com.google.firebase.vertexai.type.GenerateContentResponse ---- (ou o tipo de resposta correto)
 
 
-// Imports corretos para Firebase Vertex AI
-import com.google.firebase.Firebase
-import com.google.firebase.vertexai.vertexAI // Import para a extensão vertexAI
-import com.google.firebase.vertexai.generativeModel // Import para a função de extensão generativeModel
-import com.google.firebase.vertexai.type.generationConfig
-import com.google.firebase.vertexai.type.safetySetting
-import com.google.firebase.vertexai.type.HarmCategory
-import com.google.firebase.vertexai.type.BlockThreshold
-import com.google.firebase.vertexai.VertexAI
+// Imports para o SDK base do Google AI
+import com.google.ai.client.generativeai.GenerativeModel // Classe principal do SDK
+import com.google.ai.client.generativeai.type.BlockThreshold // Para safetySettings
+import com.google.ai.client.generativeai.type.HarmCategory // Para safetySettings
+import com.google.ai.client.generativeai.type.SafetySetting // Para safetySettings
+import com.google.ai.client.generativeai.type.generationConfig // Função para GenerationConfig
+// import com.google.ai.client.generativeai.type.GenerateContentResponse // Se precisar do tipo de resposta explícito
 
-// Demais imports que já estavam (alguns podem ser removidos se não usados pela nova impl.)
-import com.example.moneytracker.model.Transaction
-import com.example.moneytracker.model.Insight
+import com.example.moneytracker.config.ApiConfig // Para a chave de API
+import com.example.moneytracker.model.Transaction // Ainda usado por parseDate se ele permanecer aqui
+import com.example.moneytracker.model.Insight // Embora o parsing seja common, pode ser útil para referência
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
@@ -38,39 +36,64 @@ import android.util.Log
 // Implementação 'actual' para a 'expect class PlatformGeminiManager' definida em commonMain
 internal actual class PlatformGeminiManager {
 
-    // Tentativa simplificada para isolar o problema de resolução do vertexAI
-    private val generativeModel by lazy {
+    private var generativeModel: GenerativeModel? = null
+    private val modelName = "gemini-1.5-flash" // Ou outro modelo base compatível, ex: "gemini-pro"
+
+    init {
+        initializeModel()
+    }
+
+    private fun initializeModel() {
         try {
-            Log.d("AndroidGeminiManager", "Attempting to initialize Firebase Vertex AI generative model...")
-            // A forma mais direta de chamar, conforme a documentação KTX.
-            // Se Firebase.vertexAI não resolver, o problema é na configuração da dependência/plugin.
-            val model = Firebase.vertexAI.generativeModel("gemini-1.5-flash")
-            Log.d("AndroidGeminiManager", "Firebase Vertex AI generative model initialized successfully.")
-            model
+            Log.d("AndroidPlaManager", "Inicializando GenerativeModel com Google AI SDK...")
+            // Exemplo de configuração de segurança. Ajuste conforme necessário.
+            val safetySettings = listOf(
+                SafetySetting(HarmCategory.HARASSMENT, BlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
+                SafetySetting(HarmCategory.HATE_SPEECH, BlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
+                SafetySetting(HarmCategory.SEXUALLY_EXPLICIT, BlockThreshold.BLOCK_MEDIUM_AND_ABOVE),
+                SafetySetting(HarmCategory.DANGEROUS_CONTENT, BlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+            )
+            // Exemplo de configuration de geração
+            val config = generationConfig {
+                temperature = 0.7f
+                topK = 40
+                topP = 0.95f
+                maxOutputTokens = 1024
+            }
+
+            generativeModel = GenerativeModel(
+                modelName = modelName,
+                apiKey = ApiConfig.GEMINI_API_KEY, // Usa a chave do ApiConfig
+                safetySettings = safetySettings,
+                generationConfig = config
+            )
+            Log.d("AndroidPlaManager", "GenerativeModel inicializado com sucesso.")
         } catch (e: Exception) {
-            Log.e("AndroidGeminiManager", "CRITICAL: Error initializing Firebase Vertex AI generative model: ${e.message}", e)
-            null
+            Log.e("AndroidPlaManager", "Erro ao inicializar GenerativeModel: ${e.message}", e)
+            // generativeModel permanecerá nulo, as chamadas subsequentes falharão ou retornarão null.
         }
     }
 
     actual suspend fun generateContent(prompt: String): String? {
         val currentModel = generativeModel
         if (currentModel == null) {
-            Log.e("AndroidGeminiManager", "GenerativeModel não foi inicializado.")
+            Log.e("AndroidPlaManager", "GenerativeModel não foi inicializado. Verifique a chave de API e a configuração.")
+            // Tentar reinicializar pode ser uma opção, ou falhar diretamente.
+            // initializeModel() // Cuidado com chamadas repetidas se a chave estiver errada.
+            // currentModel = generativeModel
+            // if (currentModel == null) return null
             return null
         }
 
         return try {
             withContext(Dispatchers.IO) {
-                Log.i("AndroidGeminiManager", "Enviando prompt para Firebase AI...")
-                // Log do prompt pode ser muito grande, considere truncar ou logar apenas o início/fim
-                // Log.d("AndroidGeminiManager", "Prompt: ${prompt.take(500)}...")
+                Log.i("AndroidPlaManager", "Enviando prompt para Google AI SDK...")
                 val response = currentModel.generateContent(prompt)
-                Log.i("AndroidGeminiManager", "Resposta recebida do Firebase AI.")
+                Log.i("AndroidPlaManager", "Resposta recebida do Google AI SDK.")
                 response.text
             }
         } catch (e: Exception) {
-            Log.e("AndroidGeminiManager", "Erro ao chamar generateContent no Firebase AI: ${e.message}", e)
+            Log.e("AndroidPlaManager", "Erro ao chamar generateContent no Google AI SDK: ${e.message}", e)
             null
         }
     }
