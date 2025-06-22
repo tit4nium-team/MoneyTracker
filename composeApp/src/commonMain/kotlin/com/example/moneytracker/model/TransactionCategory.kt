@@ -1,5 +1,8 @@
 package com.example.moneytracker.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable // Adicionado
 data class TransactionCategory(
     val id: String,
     val name: String,

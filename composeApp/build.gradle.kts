@@ -7,6 +7,18 @@ plugins {
     alias(libs.plugins.kotlinCompose)
     alias(libs.plugins.kotlinxserialization)
     id("com.google.gms.google-services")
+    id("dev.gitlive.firebase.plugin") version "1.11.1" // Adicionado plugin dev.gitlive
+}
+
+// Configuração para a biblioteca dev.gitlive.firebase (ajustar versões conforme necessário)
+firebase {
+    android {
+        // libraryVersion = "32.7.4" // Exemplo: Alinhar com o BOM do Firebase Android
+    }
+    ios {
+        // libraryVersion = "10.22.0" // Exemplo: Versão recente do Firebase iOS SDK
+        // useFrameworks = true // Se necessário para seus pods
+    }
 }
 
 kotlin {
@@ -38,15 +50,17 @@ kotlin {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
-                implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
-                implementation("com.google.firebase:firebase-auth-ktx")
-                implementation("com.google.firebase:firebase-firestore-ktx")
-                implementation("com.google.firebase:firebase-analytics-ktx")
+                // implementation(platform("com.google.firebase:firebase-bom:32.7.4")) // BOM pode ser gerenciado pelo plugin dev.gitlive ou precisar de ajuste
+                // implementation("com.google.firebase:firebase-auth-ktx") // Comentado, será fornecido por dev.gitlive
+                // implementation("com.google.firebase:firebase-firestore-ktx") // Comentado, será fornecido por dev.gitlive
+                implementation("com.google.firebase:firebase-analytics-ktx") // Mantido se usado diretamente no androidMain
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
             }
         }
         val commonMain by getting {
             dependencies {
+                implementation("dev.gitlive:firebase-auth:1.11.1") // Adicionado dev.gitlive
+                implementation("dev.gitlive:firebase-firestore:1.11.1") // Adicionado dev.gitlive
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
