@@ -4,20 +4,21 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.InsertChart
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.MoneyOff
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_account_balance
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import moneytracker.composeapp.generated.resources.ic_assessment
+import moneytracker.composeapp.generated.resources.ic_attach_money
+import moneytracker.composeapp.generated.resources.ic_error
+import moneytracker.composeapp.generated.resources.ic_keyboard_arrow_down
+import moneytracker.composeapp.generated.resources.ic_keyboard_arrow_up
+import moneytracker.composeapp.generated.resources.ic_lightbulb
+import moneytracker.composeapp.generated.resources.ic_money_off
+import moneytracker.composeapp.generated.resources.ic_trending_up
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,7 +48,7 @@ fun InsightsScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            painter = painterResource(Res.drawable.ic_arrow_back),
                             contentDescription = "Voltar"
                         )
                     }
@@ -83,7 +84,7 @@ fun InsightsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Error,
+                            painter = painterResource(Res.drawable.ic_error),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(48.dp)
@@ -105,7 +106,7 @@ fun InsightsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.InsertChart,
+                            painter = painterResource(Res.drawable.ic_assessment),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(48.dp)
@@ -208,13 +209,14 @@ private fun InsightCard(insight: Insight) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val iconRes = when {
+                        insight.title.contains("economia", ignoreCase = true) -> Res.drawable.ic_attach_money
+                        insight.title.contains("gasto", ignoreCase = true) -> Res.drawable.ic_money_off
+                        insight.title.contains("orçamento", ignoreCase = true) -> Res.drawable.ic_account_balance
+                        else -> Res.drawable.ic_trending_up
+                    }
                     Icon(
-                        imageVector = when {
-                            insight.title.contains("economia", ignoreCase = true) -> Icons.Default.AttachMoney
-                            insight.title.contains("gasto", ignoreCase = true) -> Icons.Default.MoneyOff
-                            insight.title.contains("orçamento", ignoreCase = true) -> Icons.Default.AccountBalance
-                            else -> Icons.Default.TrendingUp
-                        },
+                        painter = painterResource(iconRes),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -226,7 +228,7 @@ private fun InsightCard(insight: Insight) {
                 }
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
-                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                         painter = painterResource(if (expanded) Res.drawable.ic_keyboard_arrow_up else Res.drawable.ic_keyboard_arrow_down),
                         contentDescription = if (expanded) "Recolher" else "Expandir"
                     )
                 }
@@ -257,7 +259,7 @@ private fun InsightCard(insight: Insight) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Lightbulb,
+                                    painter = painterResource(Res.drawable.ic_lightbulb),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                                 )

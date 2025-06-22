@@ -1,20 +1,23 @@
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material.icons.filled.InsertChart
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import moneytracker.composeapp.generated.resources.ic_assessment
+import moneytracker.composeapp.generated.resources.ic_attach_money
+import moneytracker.composeapp.generated.resources.ic_emoji_events
+import moneytracker.composeapp.generated.resources.ic_error
+import moneytracker.composeapp.generated.resources.ic_event
+import moneytracker.composeapp.generated.resources.ic_lightbulb
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.moneytracker.model.Notification
+import com.example.moneytracker.model.NotificationType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +34,7 @@ fun NotificationsScreen(
                 title = { Text("Notificações") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(painterResource(Res.drawable.ic_arrow_back), contentDescription = "Voltar")
                     }
                 }
             )
@@ -100,19 +103,20 @@ private fun NotificationCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = when (notification.type) {
-                            NotificationType.BUDGET_ALERT -> Icons.Default.Warning
-                            NotificationType.SPENDING_INSIGHT -> Icons.Default.InsertChart
-                            NotificationType.SAVING_GOAL -> Icons.Default.AttachMoney
-                            NotificationType.BILL_REMINDER -> Icons.Default.Event
-                            NotificationType.ACHIEVEMENT -> Icons.Default.Star
-                            NotificationType.TIP -> Icons.Default.Lightbulb
-                        },
+                        painter = painterResource(when (notification.type) {
+                            NotificationType.BUDGET_ALERT -> Res.drawable.ic_error
+                            NotificationType.SPENDING_INSIGHT -> Res.drawable.ic_assessment
+                            NotificationType.SAVING_GOAL -> Res.drawable.ic_attach_money
+                            NotificationType.BILL_REMINDER -> Res.drawable.ic_event
+                            NotificationType.ACHIEVEMENT -> Res.drawable.ic_emoji_events
+                            NotificationType.TIP -> Res.drawable.ic_lightbulb
+                            // else -> Res.drawable.ic_info // Default case for exhaustiveness
+                        }),
                         contentDescription = null,
                         tint = when (notification.type) {
                             NotificationType.BUDGET_ALERT -> MaterialTheme.colorScheme.error
                             NotificationType.ACHIEVEMENT -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.onSurface
+                            else -> MaterialTheme.colorScheme.onSurface // Default tint
                         }
                     )
                     Text(

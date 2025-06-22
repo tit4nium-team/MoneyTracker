@@ -58,12 +58,12 @@ class TransactionViewModel(
     ): Boolean {
         val budget = budgets.value.budgets.find { it.category.id == category.id } ?: return false
         val monthStart = getCurrentMonthStart()
-        
+
         val monthlySpent = state.value.transactions
             .filter { transaction ->
                 transaction.category.id == category.id &&
-                transaction.type == TransactionType.EXPENSE &&
-                transaction.date.startsWith(formatDate(monthStart).substring(0, 7))
+                        transaction.type == TransactionType.EXPENSE &&
+                        transaction.date.startsWith(formatDate(monthStart).substring(0, 7))
             }
             .sumOf { it.amount }
 
@@ -93,21 +93,31 @@ class TransactionViewModel(
                 date = getCurrentDate(),
                 userId = uid
             )
-            repository.addTransaction(transaction).collect { result ->
-                trySend(result)
-                if (result.isSuccess) {
-                    loadTransactions()
-                }
+            repository.addTransaction(transaction).onSuccess {
+                loadTransactions()
             }
         } ?: trySend(Result.failure(IllegalStateException("User not logged in")))
-        
+
         awaitClose()
     }
 
     fun deleteTransaction(transactionId: String) {
         scope.launch {
-            repository.deleteTransaction(transactionId)
-            loadTransactions()
+            try {
+                _state.update { it.copy(isLoading = true, error = null) }
+                repository.deleteTransaction(transactionId)
+                // Se deleteTransaction for bem sucedido (não deve no iOS dummy), recarregue.
+                // No iOS, a dummy lançará exceção antes disso.
+                loadTransactions()
+            } catch (e: Exception) {
+                println("Error in TransactionViewModel.deleteTransaction: ${e.message}")
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Erro ao deletar transação"
+                    )
+                }
+            }
         }
     }
 
@@ -115,22 +125,31 @@ class TransactionViewModel(
         transactionsJob?.cancel()
         userId?.let { uid ->
             transactionsJob = scope.launch {
-                repository.getTransactionsFlow(uid).collect { transactions ->
-                    _state.update { currentState ->
-                        val income = transactions
-                            .filter { it.type == TransactionType.INCOME }
-                            .sumOf { it.amount }
-                        val expenses = transactions
-                            .filter { it.type == TransactionType.EXPENSE }
-                            .sumOf { it.amount }
-                        
-                        currentState.copy(
-                            transactions = transactions,
-                            totalIncome = income,
-                            totalExpenses = expenses,
-                            balance = income - expenses
-                        )
+                try {
+                    _state.update { it.copy(isLoading = true, error = null) }
+                    repository.getTransactionsFlow(uid).collect { transactions ->
+                        // No iOS, com IosTransactionRepositoryDummy, 'transactions' será uma lista vazia (de emptyFlow).
+                        // Isso não é um "erro" no sentido de exceção, mas a funcionalidade está ausente.
+                        // Um tratamento mais explícito para "funcionalidade indisponível" poderia ser adicionado aqui
+                        // se soubéssemos que estamos no iOS e a lista está vazia por causa da dummy.
+                        _state.update { currentState ->
+                            val income = transactions
+                                .filter { it.type == TransactionType.INCOME }
+                                .sumOf { it.amount }
+                            val expenses = transactions
+                                .filter { it.type == TransactionType.EXPENSE }
+                                .sumOf { it.amount }
+
+                            currentState.copy(
+                                transactions = transactions,
+                                totalIncome = income,
+                                totalExpenses = expenses,
+                                balance = income - expenses
+                            )
+                        }
                     }
+                } catch (e: Exception) {
+
                 }
             }
         }

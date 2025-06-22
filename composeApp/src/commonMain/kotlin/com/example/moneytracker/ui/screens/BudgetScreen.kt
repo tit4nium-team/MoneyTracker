@@ -7,11 +7,18 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_add
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import moneytracker.composeapp.generated.resources.ic_arrow_forward
+import moneytracker.composeapp.generated.resources.ic_clear
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_keyboard_arrow_down
+import moneytracker.composeapp.generated.resources.ic_keyboard_arrow_up
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.SavingsGoal
 import com.example.moneytracker.model.TransactionCategory
+import com.example.moneytracker.util.toCurrencyString
 import com.example.moneytracker.viewmodel.BudgetViewModel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
@@ -56,7 +64,7 @@ fun BudgetScreen(
                 title = { Text("Orçamentos") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(painterResource(Res.drawable.ic_arrow_back), contentDescription = "Voltar")
                     }
                 }
             )
@@ -67,7 +75,7 @@ fun BudgetScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar Orçamento")
+                Icon(painterResource(Res.drawable.ic_add), contentDescription = "Adicionar Orçamento")
             }
         }
     ) { padding ->
@@ -93,15 +101,13 @@ fun BudgetScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = {
-                        if (selectedMonth == Month.JANUARY) {
-                            selectedMonth = Month.DECEMBER
-                            selectedYear--
-                        } else {
-                            selectedMonth = selectedMonth.minus(1)
-                        }
+                        var current = LocalDate(selectedYear, selectedMonth, 1)
+                        current = current.minus(1, DateTimeUnit.MONTH)
+                        selectedMonth = current.month
+                        selectedYear = current.year
                     }) {
                         Icon(
-                            Icons.Default.KeyboardArrowLeft,
+                            painterResource(Res.drawable.ic_arrow_back),
                             contentDescription = "Mês Anterior",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -118,15 +124,13 @@ fun BudgetScreen(
                     }
 
                     IconButton(onClick = {
-                        if (selectedMonth == Month.DECEMBER) {
-                            selectedMonth = Month.JANUARY
-                            selectedYear++
-                        } else {
-                            selectedMonth = selectedMonth.plus(1)
-                        }
+                        var current = LocalDate(selectedYear, selectedMonth, 1)
+                        current = current.plus(1, DateTimeUnit.MONTH)
+                        selectedMonth = current.month
+                        selectedYear = current.year
                     }) {
                         Icon(
-                            Icons.Default.KeyboardArrowRight,
+                            painterResource(Res.drawable.ic_arrow_forward),
                             contentDescription = "Próximo Mês",
                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
@@ -160,7 +164,7 @@ fun BudgetScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.amount })}",
+                                text = "R$ ${state.budgets.sumOf { it.amount }.toCurrencyString()}", // Corrigido
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -172,7 +176,7 @@ fun BudgetScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.spent })}",
+                                 text = "R$ ${state.budgets.sumOf { it.spent }.toCurrencyString()}", // Mantido (já estava correto)
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -196,7 +200,7 @@ fun BudgetScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Restante: R$ ${String.format("%.2f", state.budgets.sumOf { it.amount - it.spent })}",
+                        text = "Restante: R$ ${state.budgets.sumOf { it.amount - it.spent }.toCurrencyString()}", // Mantido (já estava correto)
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (state.budgets.sumOf { it.amount - it.spent } < 0)
                             MaterialTheme.colorScheme.error
@@ -223,7 +227,7 @@ fun BudgetScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Check,
+                            painter = painterResource(Res.drawable.ic_info),
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
                             tint = MaterialTheme.colorScheme.primary
@@ -297,14 +301,14 @@ fun BudgetScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         IconButton(onClick = { selectedYear-- }) {
-                            Icon(Icons.Default.KeyboardArrowLeft, "Ano Anterior")
+                            Icon(painterResource(Res.drawable.ic_arrow_back), "Ano Anterior")
                         }
                         Text(
                             text = selectedYear.toString(),
                             style = MaterialTheme.typography.titleMedium
                         )
                         IconButton(onClick = { selectedYear++ }) {
-                            Icon(Icons.Default.KeyboardArrowRight, "Próximo Ano")
+                            Icon(painterResource(Res.drawable.ic_arrow_forward), "Próximo Ano")
                         }
                     }
                 }
@@ -386,7 +390,7 @@ private fun BudgetCard(
                     )
                 ) {
                     Icon(
-                        Icons.Default.Delete,
+                        painterResource(Res.drawable.ic_clear),
                         contentDescription = "Excluir",
                         modifier = Modifier.size(20.dp)
                     )
@@ -457,7 +461,7 @@ private fun AddBudgetDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                        painter = painterResource(Res.drawable.ic_add),
                     contentDescription = null,
                     modifier = Modifier
                         .size(40.dp)
@@ -512,8 +516,8 @@ private fun AddBudgetDialog(
                                     .fillMaxWidth(),
                                 trailingIcon = {
                                     Icon(
-                                        if (expanded) Icons.Default.KeyboardArrowUp 
-                                        else Icons.Default.KeyboardArrowDown,
+                                        if (expanded) painterResource(Res.drawable.ic_keyboard_arrow_up)
+                                        else painterResource(Res.drawable.ic_keyboard_arrow_down),
                                         "Expandir"
                                     )
                                 },
@@ -733,8 +737,8 @@ private fun SavingsGoalItem(goal: SavingsGoal, onDelete: () -> Unit) {
         headlineContent = { Text(goal.name) },
         supportingContent = {
             Column {
-                Text("Meta: R$ ${String.format("%.2f", goal.targetAmount)}")
-                Text("Atual: R$ ${String.format("%.2f", goal.currentAmount)}")
+                Text("Meta: R$ ${goal.targetAmount.toCurrencyString()}")
+                Text("Atual: R$ ${goal.currentAmount.toCurrencyString()}")
                 LinearProgressIndicator(
                     progress = progress.toFloat(),
                     modifier = Modifier
@@ -746,7 +750,7 @@ private fun SavingsGoalItem(goal: SavingsGoal, onDelete: () -> Unit) {
         trailingContent = {
             IconButton(onClick = { showDeleteDialog = true }) {
                 Icon(
-                    Icons.Default.Delete,
+                    painterResource(Res.drawable.ic_clear),
                     contentDescription = "Excluir meta",
                     tint = MaterialTheme.colorScheme.error
                 )

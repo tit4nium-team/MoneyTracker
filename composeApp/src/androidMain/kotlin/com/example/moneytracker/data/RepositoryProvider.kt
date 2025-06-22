@@ -3,19 +3,19 @@ package com.example.moneytracker.data
 actual class RepositoryProvider {
     actual companion object {
         actual fun provideTransactionRepository(): TransactionRepository {
-            return FirebaseRepository()
+            return FirebaseTransactionRepositoryImpl()
         }
 
         actual fun provideAuthRepository(): AuthRepository {
-            return FirebaseAuthRepository()
+            return FirebaseAuthRepositoryImpl()
         }
 
     actual fun provideCategoryRepository(): CategoryRepository {
-        return FirebaseCategoryRepository()
+        return FirebaseCategoryRepositoryImpl()
     }
 
         actual fun provideBudgetRepository(): BudgetRepository {
-            return FirebaseBudgetRepository()
+            return FirebaseBudgetRepositoryImpl()
         }
     }
-} 
+}

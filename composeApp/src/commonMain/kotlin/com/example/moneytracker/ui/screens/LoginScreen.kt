@@ -11,6 +11,10 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_person
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager

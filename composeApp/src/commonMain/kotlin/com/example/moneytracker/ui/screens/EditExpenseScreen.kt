@@ -6,24 +6,23 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Assessment
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_account_balance
+import moneytracker.composeapp.generated.resources.ic_add
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import moneytracker.composeapp.generated.resources.ic_arrow_forward
+import moneytracker.composeapp.generated.resources.ic_assessment
+import moneytracker.composeapp.generated.resources.ic_directions_car
+import moneytracker.composeapp.generated.resources.ic_favorite
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_person
+import moneytracker.composeapp.generated.resources.ic_pets
+import moneytracker.composeapp.generated.resources.ic_restaurant
+import moneytracker.composeapp.generated.resources.ic_shopping_cart
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -67,7 +66,7 @@ fun EditExpenseScreen(
                 title = { Text(if (transactionType == TransactionType.EXPENSE) "Adicionar Despesa" else "Adicionar Receita") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(painterResource(Res.drawable.ic_arrow_back), contentDescription = "Voltar")
                     }
                 },
                 actions = {
@@ -207,14 +206,14 @@ fun EditExpenseScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = getCategoryIcon(selectedCategory.id),
+                                painter = painterResource(getCategoryIconResource(selectedCategory.id)),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                             Text(selectedCategory.name)
                         }
                         Icon(
-                            imageVector = Icons.Default.ArrowForward,
+                            painter = painterResource(Res.drawable.ic_arrow_forward),
                             contentDescription = "Selecionar categoria"
                         )
                     }
@@ -314,7 +313,7 @@ fun EditExpenseScreen(
                                 horizontalArrangement = Arrangement.Center,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null)
+                                Icon(painterResource(Res.drawable.ic_add), contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
                                 Text("Adicionar Nova Categoria")
                             }
@@ -418,7 +417,7 @@ private fun CategoryItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = getCategoryIcon(category.id),
+                painter = painterResource(getCategoryIconResource(category.id)),
                 contentDescription = null,
                 tint = if (selected) 
                     MaterialTheme.colorScheme.onPrimaryContainer 
@@ -461,24 +460,25 @@ private fun CalculatorButton(
     }
 }
 
-private fun getCategoryIcon(categoryId: String): ImageVector {
+@Composable
+private fun getCategoryIconResource(categoryId: String): org.jetbrains.compose.resources.DrawableResource {
     return when (categoryId) {
-        "food" -> Icons.Default.Restaurant
-        "bills" -> Icons.Default.AccountBalance
-        "entertainment" -> Icons.Default.Favorite
-        "transport" -> Icons.Default.DirectionsCar
-        "shopping" -> Icons.Default.ShoppingCart
-        "salary" -> Icons.Default.AccountBalance
-        "health" -> Icons.Default.LocalHospital
-        "education" -> Icons.Default.School
-        "investment" -> Icons.Default.Assessment
-        "housing" -> Icons.Default.Home
-        "clothing" -> Icons.Default.Person
-        "personal_care" -> Icons.Default.Person
-        "gifts" -> Icons.Default.Favorite
-        "pets" -> Icons.Default.Pets
-        "insurance" -> Icons.Default.AccountBalance
-        "subscriptions" -> Icons.Default.Assessment
-        else -> Icons.Default.ShoppingCart
+        "food" -> Res.drawable.ic_restaurant
+        "bills" -> Res.drawable.ic_account_balance
+        "entertainment" -> Res.drawable.ic_favorite
+        "transport" -> Res.drawable.ic_directions_car
+        "shopping" -> Res.drawable.ic_shopping_cart
+        "salary" -> Res.drawable.ic_account_balance
+        "health" -> Res.drawable.ic_favorite // Placeholder for LocalHospital
+        "education" -> Res.drawable.ic_info // Placeholder for School
+        "investment" -> Res.drawable.ic_assessment
+        "housing" -> Res.drawable.ic_account_balance // Placeholder for Home
+        "clothing" -> Res.drawable.ic_person
+        "personal_care" -> Res.drawable.ic_person
+        "gifts" -> Res.drawable.ic_favorite
+        "pets" -> Res.drawable.ic_pets
+        "insurance" -> Res.drawable.ic_account_balance
+        "subscriptions" -> Res.drawable.ic_assessment
+        else -> Res.drawable.ic_shopping_cart
     }
-} 
+}

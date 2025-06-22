@@ -6,6 +6,17 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2FE22C1B2E07AA50007CDA03 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C1A2E07AA50007CDA03 /* FirebaseAnalytics */; };
+		2FE22C1D2E07AA50007CDA03 /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C1C2E07AA50007CDA03 /* FirebaseAnalyticsCore */; };
+		2FE22C1F2E07AA50007CDA03 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C1E2E07AA50007CDA03 /* FirebaseAuth */; };
+		2FE22C212E07AA50007CDA03 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C202E07AA50007CDA03 /* FirebaseCore */; };
+		2FE22C232E07AA50007CDA03 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C222E07AA50007CDA03 /* FirebaseCrashlytics */; };
+		2FE22C252E07AA50007CDA03 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C242E07AA50007CDA03 /* FirebaseDatabase */; };
+		2FE22C272E07AA50007CDA03 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C262E07AA50007CDA03 /* FirebaseFirestore */; };
+		2FE22C292E07AA50007CDA03 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 2FE22C282E07AA50007CDA03 /* FirebaseStorage */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		B9DA97B12DC1472C00A4DA20 /* MoneyTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MoneyTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,6 +52,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2FE22C252E07AA50007CDA03 /* FirebaseDatabase in Frameworks */,
+				2FE22C1B2E07AA50007CDA03 /* FirebaseAnalytics in Frameworks */,
+				2FE22C1F2E07AA50007CDA03 /* FirebaseAuth in Frameworks */,
+				2FE22C232E07AA50007CDA03 /* FirebaseCrashlytics in Frameworks */,
+				2FE22C212E07AA50007CDA03 /* FirebaseCore in Frameworks */,
+				2FE22C292E07AA50007CDA03 /* FirebaseStorage in Frameworks */,
+				2FE22C1D2E07AA50007CDA03 /* FirebaseAnalyticsCore in Frameworks */,
+				2FE22C272E07AA50007CDA03 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +104,14 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
+				2FE22C1A2E07AA50007CDA03 /* FirebaseAnalytics */,
+				2FE22C1C2E07AA50007CDA03 /* FirebaseAnalyticsCore */,
+				2FE22C1E2E07AA50007CDA03 /* FirebaseAuth */,
+				2FE22C202E07AA50007CDA03 /* FirebaseCore */,
+				2FE22C222E07AA50007CDA03 /* FirebaseCrashlytics */,
+				2FE22C242E07AA50007CDA03 /* FirebaseDatabase */,
+				2FE22C262E07AA50007CDA03 /* FirebaseFirestore */,
+				2FE22C282E07AA50007CDA03 /* FirebaseStorage */,
 			);
 			productName = iosApp;
 			productReference = B9DA97B12DC1472C00A4DA20 /* MoneyTracker.app */;
@@ -114,6 +141,9 @@
 			);
 			mainGroup = B9DA97A82DC1472C00A4DA20;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B9DA97B22DC1472C00A4DA20 /* Products */;
 			projectDirPath = "";
@@ -374,6 +404,60 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.14.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2FE22C1A2E07AA50007CDA03 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		2FE22C1C2E07AA50007CDA03 /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		2FE22C1E2E07AA50007CDA03 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		2FE22C202E07AA50007CDA03 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		2FE22C222E07AA50007CDA03 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		2FE22C242E07AA50007CDA03 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		2FE22C262E07AA50007CDA03 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		2FE22C282E07AA50007CDA03 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2FE22C192E07AA50007CDA03 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B9DA97A92DC1472C00A4DA20 /* Project object */;
 }

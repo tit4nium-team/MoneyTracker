@@ -84,7 +84,9 @@ fun App() {
             when (screen) {
                 Screen.Splash -> {
                     LaunchedEffect(Unit) {
+        println("MY_DEBUG_LOG: SplashScreen LaunchedEffect - Verificando usuário atual...")
                         val userId = authRepository.getCurrentUserId()
+        println("MY_DEBUG_LOG: SplashScreen LaunchedEffect - userId: $userId")
                         currentScreen = if (userId != null) {
                             transactionViewModel.setUserId(userId)
                             Screen.Dashboard
@@ -96,7 +98,9 @@ fun App() {
                         SplashScreen(
                             onTimeout = {
                                 scope.launch {
+                    println("MY_DEBUG_LOG: SplashScreen onTimeout - Verificando usuário atual...")
                                     val userId = authRepository.getCurrentUserId()
+                     println("MY_DEBUG_LOG: SplashScreen onTimeout - userId: $userId")
                                     currentScreen = if (userId != null) {
                                         transactionViewModel.setUserId(userId)
                                         Screen.Dashboard

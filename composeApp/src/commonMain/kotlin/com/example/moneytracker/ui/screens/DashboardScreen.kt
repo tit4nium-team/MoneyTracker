@@ -12,18 +12,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_account_balance
+import moneytracker.composeapp.generated.resources.ic_add
+import moneytracker.composeapp.generated.resources.ic_assessment
+import moneytracker.composeapp.generated.resources.ic_attach_money
+import moneytracker.composeapp.generated.resources.ic_clear
+import moneytracker.composeapp.generated.resources.ic_close
+import moneytracker.composeapp.generated.resources.ic_directions_car
+import moneytracker.composeapp.generated.resources.ic_event
+import moneytracker.composeapp.generated.resources.ic_favorite
+import moneytracker.composeapp.generated.resources.ic_info
+import moneytracker.composeapp.generated.resources.ic_menu
+import moneytracker.composeapp.generated.resources.ic_person
+import moneytracker.composeapp.generated.resources.ic_pets
+import moneytracker.composeapp.generated.resources.ic_restaurant
+import moneytracker.composeapp.generated.resources.ic_shopping_cart
+import moneytracker.composeapp.generated.resources.ic_trending_up
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -49,6 +58,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.ui.semantics.text
+import com.example.moneytracker.util.DateTimeUtil
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,7 +88,7 @@ fun DashboardScreen(
                 title = { Text("Money Tracker") },
                 navigationIcon = {
                     IconButton(onClick = { onDrawerAction() }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Open menu")
+                        Icon(painterResource(Res.drawable.ic_menu), contentDescription = "Open menu")
                     }
                 }
             )
@@ -88,7 +99,7 @@ fun DashboardScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
+                Icon(painterResource(Res.drawable.ic_add), contentDescription = "Add Transaction")
             }
         }
     ) { padding ->
@@ -197,7 +208,7 @@ private fun CategoryBreakdownTab(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Icon(
-                                    Icons.Default.AccountBalance,
+                                    painterResource(Res.drawable.ic_account_balance),
                                     contentDescription = null,
                                     modifier = Modifier.size(48.dp),
                                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -282,7 +293,7 @@ private fun QuickInsightCard(transactions: List<Transaction>) {
                     )
                 } else {
                     Icon(
-                        imageVector = Icons.Default.Assessment,
+                        painter = painterResource(Res.drawable.ic_assessment),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSecondaryContainer,
                         modifier = Modifier.size(24.dp)
@@ -335,7 +346,7 @@ private fun CategoryProgressItem(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = categoryIcon,
+                        painter = painterResource(getCategoryIcon(category)),
                         contentDescription = null,
                         tint = categoryColor,
                         modifier = Modifier.size(20.dp)
@@ -347,14 +358,14 @@ private fun CategoryProgressItem(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ %.2f".format(amount),
+                        text = "R$ ${amount.toCurrencyString()}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                 }
             }
             Text(
-                text = "%.1f%%".format(percentage),
+                text = "${kotlin.math.round(percentage * 10) / 10.0}%",
                 style = MaterialTheme.typography.bodyMedium,
                 color = categoryColor,
                 fontWeight = FontWeight.Medium
@@ -397,25 +408,26 @@ private fun getCategoryColor(category: TransactionCategory): Color {
     }
 }
 
-private fun getCategoryIcon(category: TransactionCategory): ImageVector {
+@Composable
+private fun getCategoryIcon(category: TransactionCategory): org.jetbrains.compose.resources.DrawableResource {
     return when (category) {
-        TransactionCategory.FOOD -> Icons.Default.Add
-        TransactionCategory.TRANSPORT -> Icons.Default.Add
-        TransactionCategory.ENTERTAINMENT -> Icons.Default.Add
-        TransactionCategory.SHOPPING -> Icons.Default.Add
-        TransactionCategory.HEALTH -> Icons.Default.Add
-        TransactionCategory.EDUCATION -> Icons.Default.Add
-        TransactionCategory.BILLS -> Icons.Default.Add
-        TransactionCategory.SALARY -> Icons.Default.Add
-        TransactionCategory.INVESTMENT -> Icons.Default.Add
-        TransactionCategory.HOUSING -> Icons.Default.Add
-        TransactionCategory.CLOTHING -> Icons.Default.Add
-        TransactionCategory.PERSONAL_CARE -> Icons.Default.Add
-        TransactionCategory.GIFTS -> Icons.Default.Add
-        TransactionCategory.PETS -> Icons.Default.Add
-        TransactionCategory.INSURANCE -> Icons.Default.Add
-        TransactionCategory.SUBSCRIPTIONS -> Icons.Default.Add
-        else -> Icons.Default.Add
+        TransactionCategory.FOOD -> Res.drawable.ic_restaurant
+        TransactionCategory.TRANSPORT -> Res.drawable.ic_directions_car
+        TransactionCategory.ENTERTAINMENT -> Res.drawable.ic_favorite
+        TransactionCategory.SHOPPING -> Res.drawable.ic_shopping_cart
+        TransactionCategory.HEALTH -> Res.drawable.ic_favorite // Placeholder, ideal: ic_local_hospital or similar
+        TransactionCategory.EDUCATION -> Res.drawable.ic_info // Placeholder, ideal: ic_school or similar
+        TransactionCategory.BILLS -> Res.drawable.ic_account_balance
+        TransactionCategory.SALARY -> Res.drawable.ic_attach_money
+        TransactionCategory.INVESTMENT -> Res.drawable.ic_trending_up
+        TransactionCategory.HOUSING -> Res.drawable.ic_account_balance // Placeholder, ideal: ic_home or similar
+        TransactionCategory.CLOTHING -> Res.drawable.ic_person
+        TransactionCategory.PERSONAL_CARE -> Res.drawable.ic_person
+        TransactionCategory.GIFTS -> Res.drawable.ic_favorite
+        TransactionCategory.PETS -> Res.drawable.ic_pets
+        TransactionCategory.INSURANCE -> Res.drawable.ic_account_balance // Placeholder
+        TransactionCategory.SUBSCRIPTIONS -> Res.drawable.ic_event // Placeholder
+        else -> Res.drawable.ic_attach_money // Generic placeholder for others
     }
 }
 
@@ -492,7 +504,7 @@ fun TransactionsTab(
                                     modifier = Modifier.size(16.dp)
                                 ) {
                                     Icon(
-                                        Icons.Default.Clear,
+                                        painterResource(Res.drawable.ic_clear),
                                         contentDescription = "Excluir categoria",
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -510,7 +522,7 @@ fun TransactionsTab(
                     label = { Text("Nova Categoria") },
                     leadingIcon = {
                         Icon(
-                            Icons.Default.Add,
+                            painterResource(Res.drawable.ic_add),
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
@@ -675,8 +687,8 @@ fun TransactionListItem(
             ) {
                 Text(
                     text = when (transaction.type) {
-                        TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
-                        TransactionType.EXPENSE -> "-R$ ${String.format("%.2f", transaction.amount)}"
+                        TransactionType.INCOME -> "+R$ ${transaction.amount.toCurrencyString()}"
+                        TransactionType.EXPENSE -> "-R$ ${transaction.amount.toCurrencyString()}"
                     },
                     color = when (transaction.type) {
                         TransactionType.INCOME -> MaterialTheme.colorScheme.primary
@@ -686,7 +698,7 @@ fun TransactionListItem(
                 )
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
-                        Icons.Default.Close,
+                         painterResource(Res.drawable.ic_close),
                         contentDescription = "Excluir transação",
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -720,16 +732,7 @@ fun TransactionListItem(
 }
 
 private fun formatDate(dateStr: String): String {
-    return try {
-        val inputPattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
-        val inputFormatter = java.text.SimpleDateFormat(inputPattern, java.util.Locale.US)
-        val date = inputFormatter.parse(dateStr)
-        
-        val outputFormatter = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
-        outputFormatter.format(date)
-    } catch (e: Exception) {
-        dateStr // Retorna a string original em caso de erro
-    }
+    return DateTimeUtil.formatDateForDashboard(dateStr)
 }
 
 @Composable
@@ -768,7 +771,7 @@ private fun BalanceCard(state: TransactionState) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "R$ ${String.format("%.2f", state.balance)}",
+                text = "R$ ${state.balance.toCurrencyString()}",
                 style = MaterialTheme.typography.headlineLarge.copy(
                     fontWeight = FontWeight.Bold
                 ),
@@ -785,7 +788,7 @@ private fun BalanceCard(state: TransactionState) {
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 BalanceItem(
-                    icon = Icons.Default.Add,
+                    icon = painterResource(Res.drawable.ic_add),
                     label = "Receitas",
                     value = state.totalIncome,
                     color = MaterialTheme.colorScheme.primary,
@@ -800,7 +803,7 @@ private fun BalanceCard(state: TransactionState) {
                 )
 
                 BalanceItem(
-                    icon = Icons.Default.Close,
+                    icon = painterResource(Res.drawable.ic_close),
                     label = "Despesas",
                     value = state.totalExpenses,
                     color = MaterialTheme.colorScheme.error,
@@ -813,7 +816,7 @@ private fun BalanceCard(state: TransactionState) {
 
 @Composable
 private fun BalanceItem(
-    icon: ImageVector,
+    icon: androidx.compose.ui.graphics.painter.Painter,
     label: String,
     value: Double,
     color: Color,
@@ -824,7 +827,7 @@ private fun BalanceItem(
         modifier = Modifier.alpha(progress)
     ) {
         Icon(
-            imageVector = icon,
+            painter = icon,
             contentDescription = null,
             tint = color,
             modifier = Modifier.size(28.dp)
@@ -839,7 +842,7 @@ private fun BalanceItem(
         )
 
         Text(
-            text = "R$ ${String.format("%.2f", value)}",
+            text = "R$ ${value.toCurrencyString()}",
             style = MaterialTheme.typography.titleMedium,
             color = color,
             fontWeight = FontWeight.Bold
@@ -878,8 +881,8 @@ private fun BudgetOverviewTab(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    Icons.Default.Add,
-                    contentDescription = null,
+                     painterResource(Res.drawable.ic_add),
+                     contentDescription = "Definir Novo Orçamento",
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -899,7 +902,7 @@ private fun BudgetOverviewTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
+                    Icon(painterResource(Res.drawable.ic_add), contentDescription = null)
                         Text("Definir Novo Orçamento")
                     }
                 }
@@ -972,8 +975,8 @@ private fun BudgetOverviewCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        imageVector = Icons.Default.AccountBalance,
-                        contentDescription = null,
+                     painter = painterResource(Res.drawable.ic_account_balance),
+                     contentDescription = "Categoria do Orçamento",
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -985,7 +988,7 @@ private fun BudgetOverviewCard(
                     )
                 }
                 Text(
-                    text = "R$ ${String.format("%.2f", budget.amount)}",
+                     text = "R$ ${budget.amount.toCurrencyString()}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -1043,19 +1046,14 @@ private fun BudgetOverviewCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Info,
+                            painter = painterResource(Res.drawable.ic_info),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Orçamento excedido em R$ ${
-                                    String.format(
-                                        "%.2f",
-                                        -remaining
-                                    )
-                                }",
+                                text = "Orçamento excedido em R$ ${(-remaining).toCurrencyString()}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error
                             )
@@ -1084,10 +1082,10 @@ private fun BudgetDetailRow(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
         Text(
-            text = "R$ ${String.format("%.2f", value)}",
+            text = "R$ ${value.toCurrencyString()}",
             style = MaterialTheme.typography.bodyLarge,
             color = color,
             fontWeight = FontWeight.Medium
         )
     }
-} 
+}

@@ -15,12 +15,12 @@ kotlin {
     androidTarget {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "11"
+                jvmTarget = "17"
             }
         }
     }
     
-    jvmToolchain(11)
+    jvmToolchain(17)
     
     listOf(
         iosX64(),
@@ -38,15 +38,17 @@ kotlin {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
-                implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
-                implementation("com.google.firebase:firebase-auth-ktx")
-                implementation("com.google.firebase:firebase-firestore-ktx")
-                implementation("com.google.firebase:firebase-analytics-ktx")
+                // implementation(platform("com.google.firebase:firebase-bom:32.7.4")) // BOM pode ser gerenciado pelo plugin dev.gitlive ou precisar de ajuste
+                // implementation("com.google.firebase:firebase-auth-ktx") // Comentado, será fornecido por dev.gitlive
+                // implementation("com.google.firebase:firebase-firestore-ktx") // Comentado, será fornecido por dev.gitlive
+                implementation("com.google.firebase:firebase-analytics-ktx") // Mantido se usado diretamente no androidMain
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
             }
         }
         val commonMain by getting {
             dependencies {
+                implementation("dev.gitlive:firebase-auth:1.11.1") // Adicionado dev.gitlive
+                implementation("dev.gitlive:firebase-firestore:1.11.1") // Adicionado dev.gitlive
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -63,8 +65,11 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
                 implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
                 val composeMaterialVersion = "1.5.4"
-                implementation("androidx.compose.material:material-icons-core:$composeMaterialVersion")
-                implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
+                //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
+                implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
+                implementation("dev.gitlive:firebase-common:2.1.0")// This line
+                implementation("dev.gitlive:firebase-auth:2.1.0")// This line
+                implementation("dev.gitlive:firebase-firestore:2.1.0")// This line
             }
         }
         commonTest.dependencies {
@@ -118,8 +123,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 

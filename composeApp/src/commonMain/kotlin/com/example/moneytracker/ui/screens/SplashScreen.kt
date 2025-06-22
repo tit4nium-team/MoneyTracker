@@ -3,11 +3,12 @@ package com.example.moneytracker.ui.screens
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_account_balance
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
@@ -54,7 +55,7 @@ fun SplashScreen(
             modifier = Modifier.scale(scale.value)
         ) {
             Icon(
-                imageVector = Icons.Default.AccountBalance,
+                painter = painterResource(Res.drawable.ic_account_balance),
                 contentDescription = "Money Tracker Logo",
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(120.dp)

@@ -2,7 +2,10 @@ import androidx.compose.runtime.remember
 import com.example.moneytracker.data.AuthRepository
 import com.example.moneytracker.data.BudgetRepository
 import com.example.moneytracker.data.TransactionRepository
+import com.example.moneytracker.model.Notification
+import com.example.moneytracker.model.NotificationType
 import com.example.moneytracker.model.TransactionType
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -28,7 +31,7 @@ class NotificationService(
                 .toLocalDateTime(TimeZone.currentSystemDefault())
                 .let { "${it.month.name} ${it.year}" }.toLocalDateTime()
 
-        val budgets = budgetRepository.getBudgets(
+        val budgets = budgetRepository.getMonthlyBudgetsFlow(
             userId = userId.orEmpty(),
             month = currentDate.monthNumber,
             year = currentDate.year
@@ -90,12 +93,7 @@ class NotificationService(
         expensesByCategory.maxByOrNull { (_, amount) -> amount }?.let { (category, amount) ->
             createNotification(
                 title = "Análise de Gastos",
-                message = "Sua maior despesa este mês foi com ${category.name}: R$ ${
-                    String.format(
-                        "%.2f",
-                        amount
-                    )
-                }",
+                message = "Sua maior despesa este mês foi com ${category.name}: R$ ${amount.toCurrencyString()}",
                 type = NotificationType.SPENDING_INSIGHT
             )
         }
@@ -152,7 +150,7 @@ class NotificationService(
         if (savings > 0) {
             createNotification(
                 title = "Parabéns! 🎉",
-                message = "Você economizou R$ ${String.format("%.2f", savings)} este mês!",
+                message = "Você economizou R$ ${savings.toCurrencyString()} este mês!",
                 type = NotificationType.ACHIEVEMENT
             )
         }

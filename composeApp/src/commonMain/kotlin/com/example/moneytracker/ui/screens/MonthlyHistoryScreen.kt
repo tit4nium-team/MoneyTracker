@@ -3,16 +3,18 @@ package com.example.moneytracker.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import moneytracker.composeapp.generated.resources.Res
+import moneytracker.composeapp.generated.resources.ic_arrow_back
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionType
+import com.example.moneytracker.util.toCurrencyString
 import com.example.moneytracker.viewmodel.TransactionState
 import kotlinx.datetime.*
 
@@ -110,7 +112,7 @@ fun MonthlyHistoryScreen(
                 title = { Text("Histórico Mensal") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(painterResource(Res.drawable.ic_arrow_back), contentDescription = "Voltar")
                     }
                 }
             )
@@ -183,7 +185,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", totalIncome)}",
+                        text = "R$ ${totalIncome.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -194,7 +196,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", totalExpenses)}",
+                        text = "R$ ${totalExpenses.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -205,7 +207,7 @@ private fun MonthlyHistoryCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = "R$ ${String.format("%.2f", balance)}",
+                        text = "R$ ${balance.toCurrencyString()}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = if (balance >= 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                     )
@@ -233,8 +235,8 @@ private fun MonthlyHistoryCard(
                     }
                     Text(
                         text = when (transaction.type) {
-                            TransactionType.INCOME -> "+R$ ${String.format("%.2f", transaction.amount)}"
-                            TransactionType.EXPENSE -> "-R$ ${String.format("%.2f", transaction.amount)}"
+                            TransactionType.INCOME -> "+R$ ${transaction.amount.toCurrencyString()}"
+                            TransactionType.EXPENSE -> "-R$ ${transaction.amount.toCurrencyString()}"
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = when (transaction.type) {
