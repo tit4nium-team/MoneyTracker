@@ -4,6 +4,8 @@ import com.example.moneytracker.model.Insight
 import com.example.moneytracker.model.InsightType
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionType
+import com.example.moneytracker.util.formatDecimalPlaces
+import com.example.moneytracker.util.toCurrencyString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,9 +29,10 @@ class InsightsViewModel(
 
     private fun parseDate(dateStr: String): LocalDateTime {
         // Handle the format "Wed Jun 11 20:30:02 GMT-03:00 2025"
-        val regex = """(\w{3}) (\w{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) GMT([+-]\d{2}):(\d{2}) (\d{4})""".toRegex()
+        val regex =
+            """(\w{3}) (\w{3}) (\d{1,2}) (\d{2}):(\d{2}):(\d{2}) GMT([+-]\d{2}):(\d{2}) (\d{4})""".toRegex()
         val match = regex.find(dateStr)
-        
+
         return if (match != null) {
             val groups = match.groupValues
             val month = groups[2] // Month abbreviation
@@ -38,7 +41,7 @@ class InsightsViewModel(
             val minute = groups[5]
             val second = groups[6]
             val year = groups[9]
-            
+
             val monthNumber = when (month) {
                 "Jan" -> 1
                 "Feb" -> 2
@@ -54,7 +57,7 @@ class InsightsViewModel(
                 "Dec" -> 12
                 else -> 1 // Should not happen with the regex
             }
-            
+
             LocalDateTime(
                 year = year.toInt(),
                 monthNumber = monthNumber,
@@ -95,8 +98,10 @@ class InsightsViewModel(
     }
 
     private fun analyzeTransactions(transactions: List<Transaction>): List<Insight> {
-        val totalIncome = transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
-        val totalExpenses = transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+        val totalIncome =
+            transactions.filter { it.type == TransactionType.INCOME }.sumOf { it.amount }
+        val totalExpenses =
+            transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
         val balance = totalIncome - totalExpenses
 
         val insights = mutableListOf<Insight>()
@@ -105,7 +110,11 @@ class InsightsViewModel(
         insights.add(
             Insight(
                 title = "Saúde Financeira Geral",
-                description = "Sua renda total é R$ ${String.format("%.2f", totalIncome)} e suas despesas são R$ ${String.format("%.2f", totalExpenses)}, resultando em um saldo ${if (balance >= 0) "positivo" else "negativo"} de R$ ${String.format("%.2f", abs(balance))}.",
+                description = "Sua renda total é R$ ${totalIncome.toCurrencyString()} e suas despesas são R$ ${totalExpenses.toCurrencyString()}, resultando em um saldo ${if (balance >= 0) "positivo" else "negativo"} de R$ ${
+                    abs(
+                        balance
+                    ).toCurrencyString()
+                }.",
                 recommendation = if (balance < 0) {
                     "Considere reduzir despesas ou encontrar fontes adicionais de renda para melhorar sua saúde financeira."
                 } else {
@@ -128,7 +137,7 @@ class InsightsViewModel(
             insights.add(
                 Insight(
                     title = "Categoria com Maior Gasto",
-                    description = "Sua categoria com maior gasto é '${topCategory.first}' com R$ ${String.format("%.2f", topCategory.second)}.",
+                    description = "Sua categoria com maior gasto é '${topCategory.first}' com R$ ${topCategory.second.toCurrencyString()}.",
                     recommendation = "Revise seus gastos nesta categoria para identificar oportunidades de economia.",
                     type = InsightType.SPENDING_PATTERN
                 )
@@ -151,6 +160,7 @@ class InsightsViewModel(
                 Month.OCTOBER -> "Outubro"
                 Month.NOVEMBER -> "Novembro"
                 Month.DECEMBER -> "Dezembro"
+                else -> {}
             }
             "$monthName ${dateTime.year}"
         }
@@ -159,8 +169,10 @@ class InsightsViewModel(
             val monthlyTotals = monthlyData.mapValues { entry ->
                 entry.value.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
             }
-            val trend = if (monthlyTotals.values.toList().takeLast(2).let { it[1] > it[0] }) "aumentando" else "diminuindo"
-            
+            val trend = if (monthlyTotals.values.toList().takeLast(2)
+                    .let { it[1] > it[0] }
+            ) "aumentando" else "diminuindo"
+
             insights.add(
                 Insight(
                     title = "Tendência de Gastos Mensais",
@@ -177,11 +189,16 @@ class InsightsViewModel(
 
         // Análise de economia
         if (totalIncome > 0) {
-            val savingsRate = ((totalIncome - totalExpenses) / totalIncome * 100).coerceIn(0.0, 100.0)
+            val savingsRate =
+                ((totalIncome - totalExpenses) / totalIncome * 100).coerceIn(0.0, 100.0)
             insights.add(
                 Insight(
                     title = "Taxa de Economia",
-                    description = "Sua taxa de economia atual é de ${String.format("%.1f", savingsRate)}% da sua renda.",
+                    description = "Sua taxa de economia atual é de ${
+                        savingsRate.formatDecimalPlaces(
+                            1
+                        )
+                    }% da sua renda.",
                     recommendation = when {
                         savingsRate >= 20.0 -> "Excelente taxa de economia! Considere investir parte desse valor para objetivos de longo prazo."
                         savingsRate >= 10.0 -> "Boa taxa de economia. Tente aumentar gradualmente para 20% para maior segurança financeira."
@@ -200,11 +217,16 @@ class InsightsViewModel(
         }
 
         if (categoryExpenses.any { it.second > monthlyAvgExpenses * 0.4 }) {
-            val highExpenseCategory = categoryExpenses.first { it.second > monthlyAvgExpenses * 0.4 }
+            val highExpenseCategory =
+                categoryExpenses.first { it.second > monthlyAvgExpenses * 0.4 }
             insights.add(
                 Insight(
                     title = "Alerta de Orçamento",
-                    description = "A categoria '${highExpenseCategory.first}' representa uma parte significativa (${String.format("%.1f", highExpenseCategory.second / totalExpenses * 100)}%) dos seus gastos totais.",
+                    description = "A categoria '${highExpenseCategory.first}' representa uma parte significativa (${
+                        (highExpenseCategory.second / totalExpenses * 100).formatDecimalPlaces(
+                            1
+                        )
+                    }%) dos seus gastos totais.",
                     recommendation = "Considere estabelecer um limite de orçamento para esta categoria ou procurar alternativas mais econômicas.",
                     type = InsightType.BUDGET_ALERT
                 )
