@@ -365,7 +365,7 @@ private fun CategoryProgressItem(
                 }
             }
             Text(
-                text = "${kotlin.math.round(percentage * 10) / 10.0}%",
+                text = "%.1f%%".format(percentage),
                 style = MaterialTheme.typography.bodyMedium,
                 color = categoryColor,
                 fontWeight = FontWeight.Medium

@@ -106,8 +106,16 @@ class TransactionViewModel(
 
     fun deleteTransaction(transactionId: String) {
         scope.launch {
-            repository.deleteTransaction(transactionId)
-            loadTransactions()
+            try {
+                _state.update { it.copy(isLoading = true, error = null) }
+                repository.deleteTransaction(transactionId)
+                // Se deleteTransaction for bem sucedido (não deve no iOS dummy), recarregue.
+                // No iOS, a dummy lançará exceção antes disso.
+                loadTransactions()
+            } catch (e: Exception) {
+                println("Error in TransactionViewModel.deleteTransaction: ${e.message}")
+                _state.update { it.copy(isLoading = false, error = e.message ?: "Erro ao deletar transação") }
+            }
         }
     }
 
@@ -115,9 +123,15 @@ class TransactionViewModel(
         transactionsJob?.cancel()
         userId?.let { uid ->
             transactionsJob = scope.launch {
-                repository.getTransactionsFlow(uid).collect { transactions ->
-                    _state.update { currentState ->
-                        val income = transactions
+                try {
+                    _state.update { it.copy(isLoading = true, error = null) }
+                    repository.getTransactionsFlow(uid).collect { transactions ->
+                        // No iOS, com IosTransactionRepositoryDummy, 'transactions' será uma lista vazia (de emptyFlow).
+                        // Isso não é um "erro" no sentido de exceção, mas a funcionalidade está ausente.
+                        // Um tratamento mais explícito para "funcionalidade indisponível" poderia ser adicionado aqui
+                        // se soubéssemos que estamos no iOS e a lista está vazia por causa da dummy.
+                        _state.update { currentState ->
+                            val income = transactions
                             .filter { it.type == TransactionType.INCOME }
                             .sumOf { it.amount }
                         val expenses = transactions

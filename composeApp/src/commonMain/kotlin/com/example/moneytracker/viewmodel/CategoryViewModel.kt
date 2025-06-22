@@ -18,6 +18,8 @@ class CategoryViewModel(
     private var userId: String? = null
     private val _categories = MutableStateFlow<List<TransactionCategory>>(emptyList())
     val categories: StateFlow<List<TransactionCategory>> = _categories
+    private val _error = MutableStateFlow<String?>(null) // Adicionado para feedback de erro
+    val error: StateFlow<String?> = _error
 
     fun setUserId(id: String) {
         userId = id
@@ -27,8 +29,16 @@ class CategoryViewModel(
     private fun loadCategories() {
         userId?.let { uid ->
             scope.launch {
-                repository.getCategoriesFlow(uid).collect { categories ->
-                    _categories.value = categories
+                try {
+                    _error.value = null
+                    // No iOS, com IosCategoryRepositoryDummy, 'categories' será uma lista vazia (de emptyFlow).
+                    // Similar ao TransactionViewModel, isso é "seguro", mas não um erro explícito.
+                    repository.getCategoriesFlow(uid).collect { categories ->
+                        _categories.value = categories
+                    }
+                } catch (e: Exception) { // Embora emptyFlow não deva lançar aqui.
+                    println("Error in CategoryViewModel.loadCategories: ${e.message}")
+                    _error.value = e.message ?: "Erro ao carregar categorias"
                 }
             }
         }
@@ -41,14 +51,27 @@ class CategoryViewModel(
             icon = icon,
             isCustom = true
         )
-        return repository.addCategory(userId ?: return MutableStateFlow(Result.failure(IllegalStateException("User not logged in"))), category)
+        // A dummy já retorna Flow<Result.failure>, então o chamador na UI deve tratar.
+        // Adicionar try-catch aqui não faria muito sentido para a exceção da dummy,
+        // pois ela está encapsulada no Result que o Flow emite.
+        if (userId == null) return MutableStateFlow(Result.failure(IllegalStateException("User not logged in")))
+        return repository.addCategory(userId!!, category)
     }
 
     fun deleteCategory(categoryId: String) {
         userId?.let { uid ->
             scope.launch {
-                repository.deleteCategory(uid, categoryId)
+                try {
+                    _error.value = null
+                    repository.deleteCategory(uid, categoryId)
+                    // Após deletar, idealmente recarregar categorias ou remover da lista local.
+                    // No iOS, a dummy lançará exceção, então o catch abaixo tratará.
+                    loadCategories() // Recarrega para refletir a exclusão (se bem-sucedida)
+                } catch (e: Exception) {
+                    println("Error in CategoryViewModel.deleteCategory: ${e.message}")
+                    _error.value = e.message ?: "Erro ao deletar categoria"
+                }
             }
         }
     }
-} 
+}
