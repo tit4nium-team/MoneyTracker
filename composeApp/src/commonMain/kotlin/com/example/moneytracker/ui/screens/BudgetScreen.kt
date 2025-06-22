@@ -164,7 +164,7 @@ fun BudgetScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                text = "R$ ${String.format("%.2f", state.budgets.sumOf { it.amount })}",
+                                text = "R$ ${state.budgets.sumOf { it.amount }.toCurrencyString()}", // Corrigido
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -176,7 +176,7 @@ fun BudgetScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                             )
                             Text(
-                                 text = "R$ ${state.budgets.sumOf { it.spent }.toCurrencyString()}",
+                                 text = "R$ ${state.budgets.sumOf { it.spent }.toCurrencyString()}", // Mantido (já estava correto)
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -200,7 +200,7 @@ fun BudgetScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "Restante: R$ ${state.budgets.sumOf { it.amount - it.spent }.toCurrencyString()}",
+                        text = "Restante: R$ ${state.budgets.sumOf { it.amount - it.spent }.toCurrencyString()}", // Mantido (já estava correto)
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (state.budgets.sumOf { it.amount - it.spent } < 0)
                             MaterialTheme.colorScheme.error

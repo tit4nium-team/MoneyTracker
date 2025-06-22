@@ -5,9 +5,6 @@ import platform.Foundation.NSDate
 import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.NSTimeZone
 import platform.Foundation.NSLocale
-import platform.Foundation.currentLocale
-import platform.Foundation.localTimeZone
-import platform.Foundation.localeWithLocaleIdentifier
 
 actual object DateTimeUtil {
     actual fun formatChatTimestamp(timestampString: String): String {
@@ -51,7 +48,7 @@ actual object DateTimeUtil {
         }
         if (date == null) {
             inputFormatter.dateFormat = "EEE MMM dd HH:mm:ss zzz yyyy"
-            date = inputFormatter.dateFromString(dateString)
+             date = inputFormatter.dateFromString(dateString)
         }
 
         return if (date != null) {

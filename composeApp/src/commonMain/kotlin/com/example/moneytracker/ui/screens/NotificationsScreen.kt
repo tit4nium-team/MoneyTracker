@@ -16,8 +16,6 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.moneytracker.model.Notification
-import com.example.moneytracker.model.NotificationType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,18 +102,19 @@ private fun NotificationCard(
                 ) {
                     Icon(
                         painter = painterResource(when (notification.type) {
-                            NotificationType.BUDGET_ALERT -> Res.drawable.ic_error // Placeholder for Warning
-                            NotificationType.SPENDING_INSIGHT -> Res.drawable.ic_assessment // Placeholder for InsertChart
+                            NotificationType.BUDGET_ALERT -> Res.drawable.ic_error
+                            NotificationType.SPENDING_INSIGHT -> Res.drawable.ic_assessment
                             NotificationType.SAVING_GOAL -> Res.drawable.ic_attach_money
                             NotificationType.BILL_REMINDER -> Res.drawable.ic_event
-                            NotificationType.ACHIEVEMENT -> Res.drawable.ic_emoji_events // Placeholder for Star
+                            NotificationType.ACHIEVEMENT -> Res.drawable.ic_emoji_events
                             NotificationType.TIP -> Res.drawable.ic_lightbulb
+                            // else -> Res.drawable.ic_info // Default case for exhaustiveness
                         }),
                         contentDescription = null,
                         tint = when (notification.type) {
                             NotificationType.BUDGET_ALERT -> MaterialTheme.colorScheme.error
                             NotificationType.ACHIEVEMENT -> MaterialTheme.colorScheme.primary
-                            else -> MaterialTheme.colorScheme.onSurface
+                            else -> MaterialTheme.colorScheme.onSurface // Default tint
                         }
                     )
                     Text(

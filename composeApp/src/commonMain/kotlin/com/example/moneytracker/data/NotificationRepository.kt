@@ -1,5 +1,3 @@
-import com.example.moneytracker.model.Notification
-
 interface NotificationRepository {
     suspend fun getNotifications(): List<Notification>
     suspend fun markAsRead(notificationId: String)
