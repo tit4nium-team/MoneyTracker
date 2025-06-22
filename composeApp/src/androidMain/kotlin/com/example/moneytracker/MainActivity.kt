@@ -6,7 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.moneytracker.service.initializeGilService
+// import com.example.moneytracker.service.initializeGeminiService // Removido
+// import com.example.moneytracker.service.initializeGilService // Removido
 import com.example.moneytracker.ui.theme.MoneyTrackerTheme
 
 class MainActivity : ComponentActivity() {
@@ -15,7 +16,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         // Initialize services
-        initializeGilService()
+        // initializeGeminiService() // Removido
+        // initializeGilService() // Removido, pois GilService foi migrado para FirebaseChatService em commonMain
         
         setContent {
             MoneyTrackerTheme {

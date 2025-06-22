@@ -5,9 +5,10 @@ import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.Budget
 import com.example.moneytracker.model.TransactionCategory
 import com.example.moneytracker.model.TransactionType
-import com.example.moneytracker.service.GilService
-import com.example.moneytracker.service.GilServiceFactory
-import com.example.moneytracker.service.UserFinancialContext
+// import com.example.moneytracker.service.GilService // Removido
+// import com.example.moneytracker.service.GilServiceFactory // Removido
+import com.example.moneytracker.model.UserFinancialContext // Import atualizado
+import com.example.moneytracker.service.FirebaseChatService // Adicionado
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -109,15 +110,14 @@ class ChatViewModel(
 
         scope.launch {
             try {
-                // Modifica o prompt baseado se é primeira interação ou não
-                val prompt = if (isFirstInteraction) {
-                    content
-                } else {
-                    "Continue a conversa normalmente, sem se apresentar novamente. Pergunta do usuário: $content"
-                }
-
+                // O FirebaseChatService agora lida com a lógica de isFirstInteraction internamente no prompt.
+                // Apenas passamos a mensagem do usuário e o contexto.
                 val context = buildFinancialContext()
-                val response = GilServiceFactory.getInstance().chat(prompt, context)
+                val response = FirebaseChatService.chat(
+                    message = content, // Passa a mensagem original do usuário
+                    context = context,
+                    isFirstInteraction = isFirstInteraction
+                )
                 
                 addMessage(
                     ChatMessage(

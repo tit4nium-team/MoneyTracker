@@ -17,6 +17,7 @@ ktor = "3.1.3"
 logback = "1.5.18"
 composeCompiler = "2.1.21" # Use the same version as your Kotlin version
 googleai = "0.5.0" # Or the latest version
+firebaseAi = "20.0.0-beta05" # Firebase AI SDK for KMP (Vertex AI / Gemini)
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -35,6 +36,7 @@ ktor-serverCore = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor" }
 ktor-serverTestHost = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor" }
 generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "googleai" }
+firebase-vertexai = { group = "com.google.firebase", name = "firebase-vertexai-kotlin", version.ref = "firebaseAi" } # KMP SDK
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

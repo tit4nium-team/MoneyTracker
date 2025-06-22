@@ -60,10 +60,11 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
-                implementation(libs.generativeai)
+                // implementation(libs.generativeai) // Remover Gemini antigo
+                implementation(libs.firebase.vertexai) // Adicionar Firebase AI (Vertex AI / Gemini)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-                implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+                // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Remover Gemini antigo
                 val composeMaterialVersion = "1.5.4"
                 //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
                 implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
@@ -119,7 +120,7 @@ android {
             buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""}\"") // Replace with your project ID
             buildConfigField("String", "FIREBASE_APP_ID", "\"${localProperties.getProperty("FIREBASE_APP_ID") ?: ""}\"") // Replace with your app ID
             buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY") ?: ""}\"") // Replace with your API key
-            buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY") ?: ""}\"")
+            // buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY") ?: ""}\"") // Remover chave Gemini
         }
     }
     compileOptions {
@@ -130,6 +131,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+    // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Remover Gemini antigo
 }
 
