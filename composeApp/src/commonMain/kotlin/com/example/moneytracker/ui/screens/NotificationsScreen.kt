@@ -16,6 +16,8 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.moneytracker.model.Notification
+import com.example.moneytracker.model.NotificationType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
