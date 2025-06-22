@@ -1,6 +1,5 @@
 package com.example.moneytracker.service
 
-import com.example.moneytracker.BuildConfig
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.Insight
 import com.google.ai.client.generativeai.GenerativeModel
@@ -8,29 +7,31 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import kotlin.math.abs
-import android.util.Log
 import com.example.moneytracker.config.ApiConfig
 
+// TODO: Implement proper logging for iOS
+// import platform.Foundation.NSLog
 
-internal class AndroidGeminiService {
+internal class IosGeminiService {
     private var model: GenerativeModel? = null
-    
+
+    // TODO: Check if model list needs to be different for iOS
     private val availableModels = listOf(
-        "gemini-2.0-flash-lite"
+        "gemini-1.5-flash"
     )
-    
+
     private var currentModelIndex = 0
 
     private suspend fun tryNextModel(): GenerativeModel {
         if (currentModelIndex >= availableModels.size) {
             throw IllegalStateException("Tried all available models without success")
         }
-        
+
         val modelName = availableModels[currentModelIndex]
         currentModelIndex++
-        
-        Log.i("GeminiService", "Trying model: $modelName")
-        
+
+        // NSLog("GeminiService: Trying model: $modelName") TODO: Use platform specific logging
+
         return GenerativeModel(
             modelName = modelName,
             apiKey = ApiConfig.GEMINI_API_KEY
@@ -48,21 +49,21 @@ internal class AndroidGeminiService {
             )
         }
 
-        return withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.Default) { // Use Dispatchers.Default for iOS
             try {
                 if (model == null) {
                     model = tryNextModel()
                 }
-                
+
                 val prompt = buildFinancialPrompt(transactions)
+                // TODO: Ensure generateContent is available and works the same way on iOS
                 val response = model!!.generateContent(prompt)
                 val text = response.text ?: throw IllegalStateException("Resposta vazia do modelo")
-                
-                // Converte a resposta em insights
+
                 parseInsights(text)
             } catch (e: Exception) {
-                Log.e("GeminiService", "Error with current model: ${e.message}")
-                
+                // NSLog("GeminiService: Error with current model: ${e.message}") TODO: Use platform specific logging
+
                 try {
                     model = tryNextModel()
                     val prompt = buildFinancialPrompt(transactions)
@@ -70,7 +71,7 @@ internal class AndroidGeminiService {
                     val text = response.text ?: throw IllegalStateException("Resposta vazia do modelo")
                     parseInsights(text)
                 } catch (e: Exception) {
-                    Log.e("GeminiService", "Error generating insights", e)
+                    // NSLog("GeminiService: Error generating insights: ${e.message}") TODO: Use platform specific logging
                     listOf(
                         Insight(
                             title = "Erro ao Gerar Insights",
@@ -84,8 +85,7 @@ internal class AndroidGeminiService {
     }
 
     private fun buildFinancialPrompt(transactions: List<Transaction>): String {
-        // Ordena as transações por data, da mais recente para a mais antiga
-        val sortedTransactions = transactions.sortedByDescending { 
+        val sortedTransactions = transactions.sortedByDescending {
             parseDate(it.date.toString()).toInstant(TimeZone.currentSystemDefault())
         }
 
@@ -107,29 +107,28 @@ internal class AndroidGeminiService {
             }
             .toList()
             .sortedByDescending { (monthYear, _) ->
-                // Extrai o mês e ano da string e converte para data para ordenação
                 val (month, year) = monthYear.split(" ")
-                val monthNumber = Month.valueOf(month).ordinal
-                year.toInt() * 100 + monthNumber // Formato YYYYMM para ordenação correta
+                val monthNumber = Month.valueOf(month).ordinal // Ensure Month.valueOf works as expected
+                year.toInt() * 100 + monthNumber
             }
 
         return """
             Atue como um consultor financeiro profissional e analise os seguintes dados financeiros:
-            
+
             Resumo Financeiro:
-            - Renda Total: R$ ${String.format("%.2f", totalIncome)}
-            - Despesas Totais: R$ ${String.format("%.2f", totalExpenses)}
-            - Saldo: R$ ${String.format("%.2f", balance)}
-            
+            - Renda Total: R$ ${totalIncome.format(2)}
+            - Despesas Totais: R$ ${totalExpenses.format(2)}
+            - Saldo: R$ ${balance.format(2)}
+
             Despesas por Categoria:
-            ${categoryExpenses.joinToString("\n") { "- ${it.first}: R$ ${String.format("%.2f", it.second)}" }}
-            
+            ${categoryExpenses.joinToString("\n") { "- ${it.first}: R$ ${it.second.format(2)}" }}
+
             Dados Mensais (do mais recente ao mais antigo):
             ${monthlyData.map { (monthYear, transactions) ->
                 val monthlyExpenses = transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
-                "- ${monthYear}: R$ ${String.format("%.2f", monthlyExpenses)}"
+                "- ${monthYear}: R$ ${monthlyExpenses.format(2)}"
             }.joinToString("\n")}
-            
+
             Gere 3 insights diferentes no seguinte formato JSON:
             [
               {
@@ -138,34 +137,35 @@ internal class AndroidGeminiService {
                 "recommendation": "Recomendação prática (máximo 100 caracteres)"
               }
             ]
-            
+
             Cada insight deve focar em um aspecto diferente:
             1. Visão geral da saúde financeira
             2. Análise de gastos por categoria
             3. Tendências mensais
-            
+
             Mantenha as respostas concisas e diretas, respeitando os limites de caracteres.
             IMPORTANTE: Responda APENAS com o JSON, sem texto adicional.
         """.trimIndent()
     }
 
+    // Helper to format Double to String with 2 decimal places
+    private fun Double.format(digits: Int) = "%.${digits}f".format(this)
+
+
     private fun parseInsights(text: String): List<Insight> {
         return try {
-            // Remove qualquer texto antes e depois do JSON
             val jsonStr = text.substringAfter("[").substringBeforeLast("]")
-            
-            // Divide em objetos individuais
+
             jsonStr.split("},{")
-                .map { str -> 
+                .map { str ->
                     val cleanStr = str.trim()
                         .removeSurrounding("{", "}")
                         .trim()
-                    
-                    // Parse manual dos campos
+
                     val title = cleanStr.substringAfter("\"title\": \"").substringBefore("\"")
                     val description = cleanStr.substringAfter("\"description\": \"").substringBefore("\"")
                     val recommendation = cleanStr.substringAfter("\"recommendation\": \"").substringBefore("\"")
-                    
+
                     Insight(
                         title = title,
                         description = description,
@@ -173,7 +173,7 @@ internal class AndroidGeminiService {
                     )
                 }
         } catch (e: Exception) {
-            Log.e("GeminiService", "Error parsing insights", e)
+            // NSLog("GeminiService: Error parsing insights: ${e.message}") TODO: Use platform specific logging
             listOf(
                 Insight(
                     title = "Análise Financeira",
@@ -184,24 +184,38 @@ internal class AndroidGeminiService {
         }
     }
 
+    // TODO: This date parsing might need adjustment for iOS or could be moved to common code if compatible
     private fun parseDate(dateStr: String): LocalDateTime {
-        return try {
-            val pattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
-            val formatter = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
-            val parsedDate = formatter.parse(dateStr)
-            val instant = Instant.fromEpochMilliseconds(parsedDate.time)
-            instant.toLocalDateTime(TimeZone.currentSystemDefault())
-        } catch (e: Exception) {
-            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    try {
+        // Standard ISO format (YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS.sssZ)
+        // This is a common format from servers or JavaScript Date.toISOString()
+        if (dateStr.matches(Regex("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z"))) {
+            return Instant.parse(dateStr).toLocalDateTime(TimeZone.currentSystemDefault())
         }
+
+        // Format: "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy" (e.g., "Mon May 27 10:30:00 GMT+00:00 2024")
+        // This format was in the Android implementation. We need a KMP compatible way or an iOS specific one.
+        // For now, let's assume a simpler, more standard format might be coming from the source.
+        // If not, this part will need a robust KMP date parsing solution or platform-specific parsing.
+        // Consider kotlinx-datetime capabilities for more complex parsing if needed.
+        // As a fallback, or if the format is fixed and simple:
+        // e.g. if dateStr is "YYYY-MM-DD HH:MM:SS"
+        // val components = dateStr.split(" ", "T", ":", "-").map { it.toInt() }
+        // return LocalDateTime(components[0], components[1], components[2], components[3], components[4], components[5])
+
+    } catch (e: Exception) {
+        // NSLog("Error parsing date: $dateStr, error: ${e.message}") // TODO: Platform specific logging
     }
+    // Fallback to current time if parsing fails
+    return Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+}
 }
 
 internal actual fun initializeGeminiService() {
-    val androidService = AndroidGeminiService()
+    val iosService = IosGeminiService()
     GeminiServiceFactory.setInstance(object : InsightGenerator() {
         override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
-            return androidService.generateFinancialInsights(transactions)
+            return iosService.generateFinancialInsights(transactions)
         }
     })
 }

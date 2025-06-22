@@ -60,16 +60,20 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
-                implementation(libs.generativeai)
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-                implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
-                val composeMaterialVersion = "1.5.4"
-                //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
-                implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
-                implementation("dev.gitlive:firebase-common:2.1.0")// This line
-                implementation("dev.gitlive:firebase-auth:2.1.0")// This line
-                implementation("dev.gitlive:firebase-firestore:2.1.0")// This line
+                implementation(libs.generativeai) // Uses version from libs.versions.toml (0.5.0)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // Already present, good for coroutines
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // Already present, good for JSON parsing
+
+                // Firebase dependencies - check if they are correctly scoped if not used in common for Gemini
+                implementation("dev.gitlive:firebase-firestore:1.11.1")
+                implementation("dev.gitlive:firebase-common:1.11.1")
+                implementation("dev.gitlive:firebase-auth:1.11.1")
+            }
+        }
+        val iosMain by getting {
+            dependencies {
+                // If there are any iOS-specific dependencies for Gemini, add them here.
+                // For now, the common KMP library should suffice.
             }
         }
         commonTest.dependencies {
@@ -113,12 +117,13 @@ android {
         getByName("release") {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Ensure API keys are handled securely for release builds, e.g., not hardcoded
+            // buildConfigField("String", "GEMINI_API_KEY", "\"YOUR_RELEASE_GEMINI_API_KEY\"") // Example, use a secure way
         }
         getByName("debug") {
-            // Add Firebase configuration for debug
-            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""}\"") // Replace with your project ID
-            buildConfigField("String", "FIREBASE_APP_ID", "\"${localProperties.getProperty("FIREBASE_APP_ID") ?: ""}\"") // Replace with your app ID
-            buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY") ?: ""}\"") // Replace with your API key
+            buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProperties.getProperty("FIREBASE_PROJECT_ID") ?: ""}\"")
+            buildConfigField("String", "FIREBASE_APP_ID", "\"${localProperties.getProperty("FIREBASE_APP_ID") ?: ""}\"")
+            buildConfigField("String", "FIREBASE_API_KEY", "\"${localProperties.getProperty("FIREBASE_API_KEY") ?: ""}\"")
             buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY") ?: ""}\"")
         }
     }
@@ -128,8 +133,9 @@ android {
     }
 }
 
-dependencies {
-    debugImplementation(compose.uiTooling)
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
-}
+// Removed duplicate dependency block, commonMain should handle generativeai
+// dependencies {
+//     debugImplementation(compose.uiTooling)
+//     implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Already in commonMain
+// }
 
