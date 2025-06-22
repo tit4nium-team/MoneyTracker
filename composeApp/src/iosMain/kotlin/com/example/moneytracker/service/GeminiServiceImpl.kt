@@ -149,7 +149,7 @@ internal class IosGeminiService {
     }
 
     // Helper to format Double to String with 2 decimal places
-    private fun Double.format(digits: Int) = "%.${digits}f".format(this)
+    private fun Double.format(digits: Int): String = "%.${digits}f".format(this)
 
 
     private fun parseInsights(text: String): List<Insight> {

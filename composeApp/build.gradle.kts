@@ -30,6 +30,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            export(libs.generativeai) // Export the dependency to the framework
         }
     }
 
@@ -74,6 +75,7 @@ kotlin {
             dependencies {
                 // If there are any iOS-specific dependencies for Gemini, add them here.
                 // For now, the common KMP library should suffice.
+                api(libs.generativeai) // Expose Gemini library to iOS framework
             }
         }
         commonTest.dependencies {
