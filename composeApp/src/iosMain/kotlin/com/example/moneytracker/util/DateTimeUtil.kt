@@ -5,9 +5,9 @@ import platform.Foundation.NSDate
 import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.NSTimeZone
 import platform.Foundation.NSLocale
-import platform.Foundation.currentLocale
-import platform.Foundation.localTimeZone
-import platform.Foundation.localeWithLocaleIdentifier
+// import platform.Foundation.currentLocale // Comentado/Removido
+// import platform.Foundation.localTimeZone // Comentado/Removido
+// import platform.Foundation.localeWithLocaleIdentifier // Comentado/Removido
 
 actual object DateTimeUtil {
     actual fun formatChatTimestamp(timestampString: String): String {
@@ -19,8 +19,8 @@ actual object DateTimeUtil {
         return if (date != null) {
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "HH:mm"
-                locale = NSLocale.currentLocale()
-                timeZone = NSTimeZone.localTimeZone
+                locale = NSLocale.currentLocale // Alterado para propriedade
+                timeZone = NSTimeZone.localTimeZone // Mantido como propriedade (já estava assim implicitamente)
             }
             outputFormatter.stringFromDate(date)
         } else {
@@ -33,14 +33,14 @@ actual object DateTimeUtil {
             val date = NSDate.dateWithTimeIntervalSince1970(millis / 1000.0)
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy HH:mm"
-                locale = NSLocale.currentLocale()
-                timeZone = NSTimeZone.localTimeZone
+                locale = NSLocale.currentLocale // Alterado para propriedade
+                timeZone = NSTimeZone.localTimeZone // Mantido como propriedade
             }
             return outputFormatter.stringFromDate(date)
         }
 
         val inputFormatter = NSDateFormatter().apply {
-            locale = NSLocale.localeWithLocaleIdentifier("en_US_POSIX")
+            locale = NSLocale.localeWithLocaleIdentifier("en_US_POSIX") // Mantido como método
             dateFormat = "EEE MMM dd HH:mm:ss Z yyyy"
         }
         var date = inputFormatter.dateFromString(dateString)
@@ -57,8 +57,8 @@ actual object DateTimeUtil {
         return if (date != null) {
             val outputFormatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy HH:mm"
-                locale = NSLocale.currentLocale()
-                timeZone = NSTimeZone.localTimeZone
+                locale = NSLocale.currentLocale // Alterado para propriedade
+                timeZone = NSTimeZone.localTimeZone // Mantido como propriedade
             }
             outputFormatter.stringFromDate(date)
         } else {
@@ -71,8 +71,8 @@ actual object DateTimeUtil {
             val date = NSDate.dateWithTimeIntervalSince1970(timestamp / 1000.0)
             val formatter = NSDateFormatter().apply {
                 dateFormat = "dd/MM/yyyy"
-                locale = NSLocale.currentLocale()
-                timeZone = NSTimeZone.localTimeZone
+                locale = NSLocale.currentLocale // Alterado para propriedade
+                timeZone = NSTimeZone.localTimeZone // Mantido como propriedade
             }
             formatter.stringFromDate(date)
         } catch (e: Exception) {

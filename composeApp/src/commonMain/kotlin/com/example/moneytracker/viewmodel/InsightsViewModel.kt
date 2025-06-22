@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.*
 import kotlin.math.abs
+import com.example.moneytracker.util.toCurrencyString
+import com.example.moneytracker.util.formatDecimalPlaces
 
 data class InsightsState(
     val insights: List<Insight> = emptyList(),
@@ -105,7 +107,7 @@ class InsightsViewModel(
         insights.add(
             Insight(
                 title = "Saúde Financeira Geral",
-                description = "Sua renda total é R$ ${String.format("%.2f", totalIncome)} e suas despesas são R$ ${String.format("%.2f", totalExpenses)}, resultando em um saldo ${if (balance >= 0) "positivo" else "negativo"} de R$ ${String.format("%.2f", abs(balance))}.",
+                description = "Sua renda total é R$ ${totalIncome.toCurrencyString()} e suas despesas são R$ ${totalExpenses.toCurrencyString()}, resultando em um saldo ${if (balance >= 0) "positivo" else "negativo"} de R$ ${abs(balance).toCurrencyString()}.",
                 recommendation = if (balance < 0) {
                     "Considere reduzir despesas ou encontrar fontes adicionais de renda para melhorar sua saúde financeira."
                 } else {
@@ -128,7 +130,7 @@ class InsightsViewModel(
             insights.add(
                 Insight(
                     title = "Categoria com Maior Gasto",
-                    description = "Sua categoria com maior gasto é '${topCategory.first}' com R$ ${String.format("%.2f", topCategory.second)}.",
+                    description = "Sua categoria com maior gasto é '${topCategory.first}' com R$ ${topCategory.second.toCurrencyString()}.",
                     recommendation = "Revise seus gastos nesta categoria para identificar oportunidades de economia.",
                     type = InsightType.SPENDING_PATTERN
                 )
@@ -181,7 +183,7 @@ class InsightsViewModel(
             insights.add(
                 Insight(
                     title = "Taxa de Economia",
-                    description = "Sua taxa de economia atual é de ${String.format("%.1f", savingsRate)}% da sua renda.",
+                    description = "Sua taxa de economia atual é de ${savingsRate.formatDecimalPlaces(1)}% da sua renda.",
                     recommendation = when {
                         savingsRate >= 20.0 -> "Excelente taxa de economia! Considere investir parte desse valor para objetivos de longo prazo."
                         savingsRate >= 10.0 -> "Boa taxa de economia. Tente aumentar gradualmente para 20% para maior segurança financeira."
@@ -204,7 +206,7 @@ class InsightsViewModel(
             insights.add(
                 Insight(
                     title = "Alerta de Orçamento",
-                    description = "A categoria '${highExpenseCategory.first}' representa uma parte significativa (${String.format("%.1f", highExpenseCategory.second / totalExpenses * 100)}%) dos seus gastos totais.",
+                    description = "A categoria '${highExpenseCategory.first}' representa uma parte significativa (${(highExpenseCategory.second / totalExpenses * 100).formatDecimalPlaces(1)}%) dos seus gastos totais.",
                     recommendation = "Considere estabelecer um limite de orçamento para esta categoria ou procurar alternativas mais econômicas.",
                     type = InsightType.BUDGET_ALERT
                 )
