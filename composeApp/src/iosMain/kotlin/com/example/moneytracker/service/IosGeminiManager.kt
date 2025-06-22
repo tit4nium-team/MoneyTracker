@@ -11,103 +11,150 @@ import kotlin.coroutines.resumeWithException
 // import FirebaseCore // Para FirebaseApp.configure() - geralmente feito no AppDelegate
 // import FirebaseVertexAI // O nome real do módulo para Vertex AI / Gemini no iOS
 
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.NSError
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+// É CRUCIAL que os imports para o Firebase iOS SDK sejam os corretos.
+// Eles dependerão de como o Swift Package Manager expõe os módulos ao Kotlin/Native.
+// Frequentemente, o nome do módulo SPM é usado como prefixo.
+// Exemplo: Se o produto do SPM for FirebaseVertexAI, os imports podem ser:
+// import FirebaseVertexAI.FIRVertexAI (ou apenas VertexAI se for um tipo Swift puro)
+// import FirebaseVertexAI.FIRGenerativeModel (ou apenas GenerativeModel)
+// import FirebaseCore.FIRApp (ou apenas FirebaseApp)
+
+// Estes são placeholders e precisarão ser verificados/ajustados no seu ambiente Xcode.
+// import cocoapods.FirebaseVertexAI.* // Se estiver usando CocoaPods e quer acesso total
+// import FirebaseVertexAI // Se o módulo SPM for nomeado assim
+
 @OptIn(ExperimentalForeignApi::class)
 internal actual class PlatformGeminiManager {
 
-    // Uma referência ao GenerativeModel do Firebase iOS SDK.
-    // A inicialização real pode ser mais complexa e precisar ser feita
-    // após FirebaseApp.configure() ter sido chamado.
-    // private var generativeModel: FIRGenerativeModel? = null // Exemplo de tipo, verificar nome exato
-    // private val modelName = "gemini-1.5-flash" // Exemplo, alinhar com o modelo usado no Android
+    // Referência ao modelo GenerativeModel do Firebase iOS SDK.
+    // A inicialização DEVE ocorrer após FirebaseApp.configure() no AppDelegate.
+    // Usar 'lazy' é uma boa abordagem para adiar a inicialização até o primeiro uso
+    // e garantir que o FirebaseApp esteja configurado.
+    private val generativeModel: Any? by lazy { // Use 'Any?' como placeholder para o tipo real do SDK Swift.
+        // Exemplo de como você obteria o modelo (código conceitual, precisa ser adaptado para Swift real):
+        // val firebaseApp = FIRApp.defaultApp() // Ou FirebaseApp.app() em Swift mais recente
+        // if (firebaseApp == null) {
+        //     println("ERROR: Firebase App não configurado no iOS. Chame FirebaseApp.configure() no AppDelegate.")
+        //     return@lazy null
+        // }
+        // try {
+        //     // Supondo que o SDK do iOS tenha uma API similar a:
+        //     // FIRVertexAI.vertexAI(app: firebaseApp).generativeModel(modelName: "gemini-1.5-flash")
+        //     // O nome exato da API e dos tipos (FIRVertexAI, FIRGenerativeModel) precisa ser verificado.
+        //     // Ex: FirebaseVertexAI.VertexAI.vertexAI().generativeModel(name: "gemini-1.5-flash")
+        //     println("IosGeminiManager: Tentando inicializar o modelo Firebase AI para iOS...")
+        //     // Esta linha é um placeholder para a chamada real ao SDK Swift.
+        //     // val model = ... chamada ao SDK Swift ...
+        //     // println("IosGeminiManager: Modelo Firebase AI inicializado com sucesso.")
+        //     // model
+        //     "PlaceholderModelObject" // Substitua pela instância real do modelo Swift
+        // } catch (e: Exception) {
+        //     println("ERROR: Falha ao inicializar o modelo Firebase AI no iOS: ${e.message}")
+        //     null
+        // }
+        null // REMOVER ESTE NULL E IMPLEMENTAR A INICIALIZAÇÃO ACIMA
+    }
 
     init {
-        // É crucial que FirebaseApp.configure() seja chamado no lado Swift (AppDelegate)
-        // antes que esta classe seja usada extensivamente.
-        // A inicialização do 'generativeModel' em si pode precisar ser lazy ou
-        // feita em um método separado chamado após a configuração do Firebase.
-        // Exemplo:
-        // if (FIRApp.defaultApp() == null) {
-        //     println("Firebase não configurado no iOS. Chame FirebaseApp.configure() no AppDelegate.")
-        // } else {
-        //     val vertexAI = FIRVertexAI.vertexAI() // Obter instância do VertexAI
-        //     generativeModel = vertexAI.generativeModelWithName(modelName)
-        // }
-        println("IosGeminiManager: init. Lembre-se de configurar FirebaseApp.configure() no AppDelegate.")
+        // Apenas um log para lembrar da configuração do Firebase.
+        // A inicialização real do 'generativeModel' é feita no 'lazy' delegate.
+        println("IosGeminiManager: init. Certifique-se de que FirebaseApp.configure() foi chamado no AppDelegate.")
     }
 
     actual suspend fun generateContent(prompt: String): String? {
-        // TODO: Implementar a chamada real ao Firebase iOS SDK.
-        //       Isto é um placeholder complexo mostrando como a interoperação pode ser feita.
+        val iosSDKModel = generativeModel // Isso tentará inicializar o modelo na primeira chamada.
 
-        // Placeholder: Simular uma chamada assíncrona.
-        // A implementação real usaria o SDK FirebaseAI do iOS.
-        // Exemplo conceitual (o código real do Firebase iOS SDK será diferente):
-
-        /*
-        val iosModel = generativeModel
-        if (iosModel == null) {
-            println("IosGeminiManager: generativeModel não inicializado.")
-            return null
+        if (iosSDKModel == null) {
+            println("IosGeminiManager: Modelo GenerativeModel do Firebase iOS não está disponível/inicializado.")
+            // Retornar um JSON de erro padrão pode ser útil para o UI.
+            return """
+            [
+              {
+                "title": "Erro de Configuração (iOS)",
+                "description": "O serviço de IA não pôde ser inicializado no iOS.",
+                "recommendation": "Verifique a configuração do Firebase no projeto Xcode e os logs."
+              }
+            ]
+            """.trimIndent()
         }
 
+        // Aqui é onde a mágica da interoperação Kotlin/Native <-> Swift acontece.
+        // Você precisará chamar o método `generateContent` (ou similar) do `iosSDKModel`.
+        // O SDK do Firebase iOS para Gemini usa async/await em Swift.
+        // Precisamos fazer a ponte para as coroutines do Kotlin.
+
         return suspendCancellableCoroutine { continuation ->
-            println("IosGeminiManager: Enviando prompt para Firebase AI (iOS): $prompt")
+            println("IosGeminiManager: Enviando prompt para Firebase AI (iOS)...")
+            // Log.d("IosGeminiManager", "Prompt: $prompt") // Cuidado com prompts longos
 
-            // Supondo que o SDK do iOS tenha um método como:
-            // iosModel.generateContent(prompt) { responseText: String?, error: NSError? -> ... }
-            // Precisamos adaptar para a API real do FirebaseVertexAI.
+            // ----- INÍCIO DO BLOCO CONCEITUAL DE INTEROP SWIFT -----
+            // O código abaixo é uma REPRESENTAÇÃO de como você chamaria o SDK Swift.
+            // Você NÃO pode escrever Swift diretamente aqui. Você precisa:
+            // 1. Que o Kotlin/Native "enxergue" as APIs do FirebaseVertexAI (configuração do build.gradle e Xcode).
+            // 2. Chamar os métodos Swift equivalentes usando a sintaxe Kotlin/Native.
+            // OU
+            // 3. Criar uma classe/função wrapper em Swift que você chama do Kotlin.
 
-            // Exemplo de como seria uma chamada ao SDK FirebaseVertexAI (Swift)
-            // let model = VertexAI.vertexAI().generativeModel(name: "gemini-1.5-flash")
-            // Task {
-            //   do {
-            //     let response = try await model.generateContent(prompt)
-            //     // Passar response.text para continuation.resume(response.text)
-            //   } catch {
-            //     // Passar erro para continuation.resumeWithException(error)
-            //   }
-            // }
-            // A chamada acima é Swift. Traduzir para Kotlin/Native requer acesso direto
-            // aos símbolos do SDK ou uma camada de wrapper Swift.
+            // Exemplo MUITO SIMPLIFICADO e CONCEITUAL (NÃO FUNCIONARÁ DIRETAMENTE):
+            // Assumindo que `iosSDKModel` é um `FIRGenerativeModel` (ou tipo Swift equivalente)
+            // e que ele tem um método como `generateContent(prompt: String, completion: (String?, Error?) -> Unit)`
 
-            // Por enquanto, vamos simular uma resposta de sucesso após um delay.
-            // Esta parte é onde a mágica da interoperação Kotlin/Native -> Swift aconteceria.
-            // Você precisaria:
-            // 1. Ter o Firebase iOS SDK (com FirebaseAI/FirebaseVertexAI) como dependência no seu projeto Xcode.
-            // 2. O Kotlin/Native conseguir "ver" os cabeçalhos/módulos desse SDK.
-            // 3. Chamar os métodos apropriados.
+            /*
+            (iosSDKModel as FIRGenerativeModel).generateContent(prompt) { responseText, error ->
+                if (error != null) {
+                    println("IosGeminiManager: Erro do SDK Firebase iOS: ${error.localizedDescription}")
+                    continuation.resumeWithException(Exception("Erro do Firebase iOS SDK: ${error.localizedDescription}"))
+                } else if (responseText != null) {
+                    println("IosGeminiManager: Resposta recebida do Firebase iOS SDK.")
+                    continuation.resume(responseText)
+                } else {
+                    println("IosGeminiManager: Resposta nula e sem erro do Firebase iOS SDK.")
+                    continuation.resume(null) // Ou um JSON de erro específico
+                }
+            }
+            */
 
-            // Simulação:
-            val simulatedJsonResponse = """
-                [
-                  {
-                    "title": "Insight Simulado iOS",
-                    "description": "Esta resposta foi simulada no IosGeminiManager.",
-                    "recommendation": "Implemente a chamada real ao SDK Firebase iOS."
-                  }
-                ]
-            """.trimIndent()
+            // SE O SDK SWIFT USAR ASYNC/AWAIT:
+            // A interop com async/await do Swift para suspendCancellableCoroutine é mais complexa.
+            // Frequentemente envolve iniciar uma Task Swift e usar um completion handler ou
+            // um GlobalScope (com cuidado) para chamar de volta para o Kotlin.
+            // Exemplo com um wrapper Swift seria mais limpo.
 
-            // Simular um callback de sucesso
-            // Em um cenário real, este callback viria do SDK nativo.
-            if (prompt.contains("error_sim")) { // Simular um erro
-                 val nsError = NSError(domain = "com.example.iosgemini", code = 123, userInfo = null)
-                 println("IosGeminiManager: Simulando erro.")
-                 continuation.resumeWithException(Exception("Erro simulado do SDK iOS: ${nsError.localizedDescription}"))
+            // ----- FIM DO BLOCO CONCEITUAL DE INTEROP SWIFT -----
+
+            // Placeholder ATUAL que será executado:
+            println("IosGeminiManager: Implementação da chamada nativa ao Swift SDK é necessária aqui.")
+            if (prompt.contains("sim_ios_error")) {
+                 continuation.resumeWithException(Exception("Erro simulado na chamada nativa iOS"))
             } else {
-                println("IosGeminiManager: Simulando resposta de sucesso.")
+                 val simulatedJsonResponse = """
+                    [
+                      {
+                        "title": "Insight Simulado (iOS Placeholder)",
+                        "description": "Esta resposta é um placeholder do IosGeminiManager.",
+                        "recommendation": "Implemente a chamada real ao SDK Firebase iOS aqui."
+                      }
+                    ]
+                """.trimIndent()
                 continuation.resume(simulatedJsonResponse)
             }
 
-            // Lidar com cancelamento da coroutine
             continuation.invokeOnCancellation {
-                // Lógica para cancelar a operação nativa, se possível.
-                println("IosGeminiManager: Operação generateContent cancelada.")
+                // Se o SDK nativo do iOS permitir o cancelamento da solicitação,
+                // você chamaria o método de cancelamento aqui.
+                println("IosGeminiManager: Operação generateContent cancelada (se suportado pelo SDK nativo).")
             }
         }
-        */
-        println("IosGeminiManager: generateContent chamado com prompt: $prompt. Implementação real pendente.")
-        return """
+    }
+}
+
+// ... (initializePlatformManager e doInitIosPlatformManager permanecem os mesmos)
             [
               {
                 "title": "Insight Placeholder iOS (Manager)",

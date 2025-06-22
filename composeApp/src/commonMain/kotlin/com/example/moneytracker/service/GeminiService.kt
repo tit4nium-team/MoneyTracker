@@ -15,50 +15,35 @@ internal expect class PlatformGeminiManager() {
 // InsightGenerator agora usará PlatformGeminiManager para obter o conteúdo JSON
 // e então (idealmente) parseá-lo.
 abstract class InsightGenerator {
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.SerializationException
+
+// ... (outros imports e expect class PlatformGeminiManager)
+
+abstract class InsightGenerator {
     abstract suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight>
+
+    // Configuração do parser JSON para ser um pouco mais tolerante
+    private val jsonParser = Json {
+        ignoreUnknownKeys = true // Ignora chaves no JSON que não estão no data class Insight
+        isLenient = true // Permite algumas malformações leves no JSON (usar com cautela)
+        prettyPrint = false // Não necessário para parsing, mas útil para debugging de output
+    }
 
     protected fun parseInsightsFromJson(jsonString: String?): List<Insight> {
         if (jsonString.isNullOrBlank()) {
+            // Log.w("InsightGenerator", "JSON string nula ou vazia recebida para parsing.")
             return listOf(Insight("Erro de Geração", "Resposta da IA vazia ou nula.", "Verifique a conexão ou o prompt."))
         }
-        try {
-            // Validação básica de JSON Array
-            if (!jsonString.trim().startsWith("[") || !jsonString.trim().endsWith("]")) {
-                 return listOf(Insight("Erro de Formato", "Resposta da IA não é um array JSON válido.", jsonString.take(200)))
-            }
-
-            // Tentativa de parsing manual simples. kotlinx.serialization é recomendado para produção.
-            val objectsStr = jsonString.trim().removePrefix("[").removeSuffix("]").trim()
-            if (objectsStr.isEmpty()) return emptyList()
-
-            return objectsStr.split("},{").mapNotNull { objStr ->
-                val completeObjStr = when {
-                    objectsStr.startsWith("{") && objectsStr.endsWith("}") -> objStr // Array de um único objeto
-                    objStr.startsWith("{") && objStr.endsWith("}") -> objStr
-                    objStr.startsWith("{") -> "$objStr}"
-                    objStr.endsWith("}") -> "{$objStr"
-                    else -> "{$objStr}"
-                }
-
-                try {
-                    val title = completeObjStr.substringAfter("\"title\": \"", "").substringBefore("\"", "")
-                    val description = completeObjStr.substringAfter("\"description\": \"", "").substringBefore("\"", "")
-                    val recommendation = completeObjStr.substringAfter("\"recommendation\": \"", "").substringBefore("\"", "")
-
-                    if (title.isNotBlank() || description.isNotBlank() || recommendation.isNotBlank()) { // Permite campos parcialmente vazios se outros estiverem ok
-                        Insight(title, description, recommendation)
-                    } else {
-                        null
-                    }
-                } catch (e: Exception) {
-                    // Logar erro de parsing de objeto individual se necessário
-                    null
-                }
-            }.ifEmpty {
-                 listOf(Insight("Sem Insights", "Nenhum insight utilizável pode ser parseado da resposta.", jsonString.take(200)))
-            }
-        } catch (e: Exception) {
-            return listOf(Insight("Erro de Parsing", "Exceção ao processar resposta da IA: ${e.message}", jsonString.take(200)))
+        return try {
+            // Log.d("InsightGenerator", "Tentando parsear JSON: $jsonString")
+            jsonParser.decodeFromString<List<Insight>>(jsonString)
+        } catch (e: SerializationException) {
+            // Log.e("InsightGenerator", "Erro de serialização ao parsear JSON: ${e.message}", e)
+            listOf(Insight("Erro de Parsing", "Falha ao decodificar resposta da IA: ${e.message}", jsonString.take(200)))
+        } catch (e: Exception) { // Captura outras exceções inesperadas durante o parsing
+            // Log.e("InsightGenerator", "Erro inesperado ao parsear JSON: ${e.message}", e)
+            listOf(Insight("Erro Inesperado", "Ocorreu um erro inesperado ao processar a resposta da IA.", jsonString.take(200)))
         }
     }
 }
@@ -101,34 +86,140 @@ internal object GeminiServiceFactory {
     }
 }
 
-// Função comum para construir o prompt, pode ser usada por Android e iOS (via `actual` implementations se necessário)
-// ou diretamente se a lógica for 100% compartilhada.
-// Movida para fora da factory para melhor organização.
-internal fun buildFinancialPromptCommon(transactions: List<Transaction>): String {
-    // Lógica de ordenação e agrupamento de transações (exemplo simplificado)
-    // Idealmente, usar kotlinx-datetime para manipulação de datas de forma KMP.
-    // A lógica de parseDate() precisará ser KMP compatível ou platform-specific.
-    // Esta é uma simplificação e pode precisar de adaptação.
-    val transactionDetails = transactions.take(10).joinToString("\n") { t ->
-        "Data: ${t.date}, Desc: ${t.description}, Valor: ${t.amount}, Cat: ${t.category.name}"
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
+import kotlin.math.abs
+
+
+// Adaptação da função parseDate para commonMain, assumindo formato ISO ou fallback.
+// Se o formato for "EEE MMM dd...", uma biblioteca KMP de parsing ou expect/actual será necessária.
+private fun commonParseDate(dateStr: String): LocalDateTime {
+    return try {
+        Instant.parse(dateStr).toLocalDateTime(TimeZone.currentSystemDefault())
+    } catch (e: Exception) {
+        // Log ou tratamento de erro se necessário.
+        // Fallback para agora, mas idealmente deveria falhar ou ser mais específico.
+        try {
+            // Tentativa de um formato mais simples que pode vir de new Date().toString() de JS ou similar
+            // Ex: "Mon May 27 2024 12:34:56 GMT+0000 (Coordinated Universal Time)" - isso é complexo
+            // Para simplificar, se não for ISO, vamos apenas retornar o tempo atual como fallback.
+            // Uma solução robusta aqui é crucial se as datas não forem ISO.
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        } catch (e2: Exception) {
+            Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        }
     }
-
-    return """
-        Analise as seguintes transações financeiras (máximo de 10 listadas para brevidade):
-        $transactionDetails
-
-        Gere 3 insights financeiros concisos e práticos no seguinte formato JSON (array de objetos):
-        [
-          {
-            "title": "Título Curto do Insight (até 50 chars)",
-            "description": "Descrição um pouco mais detalhada do insight (até 150 chars).",
-            "recommendation": "Recomendação ou ação sugerida (até 100 chars)."
-          }
-        ]
-        Responda APENAS com o JSON. Não inclua nenhum texto ou explicação adicional fora do JSON.
-        Se não houver transações suficientes ou insights claros, retorne um array JSON vazio: [].
-    """.trimIndent()
 }
 
-// A antiga `initializeGeminiService()` é efetivamente substituída pela `initializePlatformManager()`.
-// Não precisamos mais de uma `expect fun initializeGeminiService()`.
+// Função comum para construir o prompt, agora com a lógica mais detalhada.
+internal fun buildFinancialPromptCommon(transactions: List<Transaction>): String {
+    if (transactions.isEmpty()) {
+        // Não deveria chegar aqui se a factory já trata isso, mas como defesa.
+        return "Sem transações para analisar. Por favor, adicione transações."
+    }
+
+    val sortedTransactions = transactions.sortedByDescending {
+        commonParseDate(it.date.toString()).toInstant(TimeZone.currentSystemDefault())
+    }
+
+    val totalIncome = sortedTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+    val totalExpenses = sortedTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+    val balance = totalIncome - totalExpenses
+
+    val categoryExpenses = sortedTransactions
+        .filter { it.amount < 0 }
+        .groupBy { it.category.name } // Usar o nome da categoria
+        .mapValues { entry -> entry.value.sumOf { transaction -> abs(transaction.amount) } }
+        .toList()
+        .sortedByDescending { it.second }
+        .take(5) // Limitar às top 5 categorias para brevidade no prompt
+
+    val monthlyData = sortedTransactions
+        .groupBy { transaction ->
+            val dateTime = commonParseDate(transaction.date.toString())
+            // Formato MM-YYYY para consistência e facilidade de ordenação
+            "${dateTime.monthNumber.toString().padStart(2, '0')}-${dateTime.year}"
+        }
+        .mapValues { entry ->
+            // Dentro de cada mês/ano, calcular despesas
+            entry.value.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+        }
+        .toList()
+        .sortedByDescending { (monthYear, _) ->
+            val parts = monthYear.split("-")
+            val month = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val year = parts.getOrNull(1)?.toIntOrNull() ?: 0
+            year * 100 + month // Ordenar por YYYYMM
+        }
+        .take(3) // Limitar aos últimos 3 meses para brevidade
+
+    // Helper para formatar Double para String com 2 casas decimais (KMP safe)
+    fun Double.formatAmount(): String {
+        val rounded = (this * 100).toLong() / 100.0
+        val s = rounded.toString()
+        val parts = s.split('.')
+        val intPart = parts[0]
+        val decPart = parts.getOrNull(1)?.padEnd(2, '0') ?: "00"
+        return "$intPart.${decPart.take(2)}"
+    }
+
+    val promptBuilder = StringBuilder()
+    promptBuilder.appendLine("Atue como um consultor financeiro profissional e analise os seguintes dados financeiros de um usuário:")
+    promptBuilder.appendLine()
+    promptBuilder.appendLine("Resumo Financeiro:")
+    promptBuilder.appendLine("- Renda Total: R$ ${totalIncome.formatAmount()}")
+    promptBuilder.appendLine("- Despesas Totais: R$ ${totalExpenses.formatAmount()}")
+    promptBuilder.appendLine("- Saldo: R$ ${balance.formatAmount()}")
+    promptBuilder.appendLine()
+
+    if (categoryExpenses.isNotEmpty()) {
+        promptBuilder.appendLine("Principais Despesas por Categoria (Top 5):")
+        categoryExpenses.forEach { (categoryName, amount) ->
+            promptBuilder.appendLine("- ${categoryName}: R$ ${amount.formatAmount()}")
+        }
+        promptBuilder.appendLine()
+    }
+
+    if (monthlyData.isNotEmpty()) {
+        promptBuilder.appendLine("Despesas Mensais Recentes (Últimos 3 meses):")
+        monthlyData.forEach { (monthYear, amount) ->
+            // Tentar reformatar monthYear para nome do mês se desejado. Ex: "05-2024" -> "MAIO 2024"
+            val parts = monthYear.split("-")
+            val monthName = try { Month(parts[0].toInt()).name } catch (e:Exception) { monthYear }
+            val year = parts.getOrNull(1) ?: ""
+            promptBuilder.appendLine("- $monthName $year: R$ ${amount.formatAmount()}")
+        }
+        promptBuilder.appendLine()
+    }
+
+    promptBuilder.appendLine("Com base nesses dados, gere EXATAMENTE 3 insights financeiros distintos e práticos para o usuário.")
+    promptBuilder.appendLine("Siga ESTRITAMENTE o seguinte formato JSON para a resposta (um array de 3 objetos):")
+    promptBuilder.appendLine("""
+    [
+      {
+        "title": "Título Curto e Impactante do Insight (max 50 chars)",
+        "description": "Descrição clara e concisa do insight, explicando o que foi observado (max 150 chars).",
+        "recommendation": "Recomendação prática e acionável que o usuário pode seguir (max 100 chars)."
+      },
+      {
+        "title": "Outro Título de Insight (max 50 chars)",
+        "description": "Outra observação importante sobre as finanças (max 150 chars).",
+        "recommendation": "Outra sugestão ou dica útil (max 100 chars)."
+      },
+      {
+        "title": "Terceiro Insight (max 50 chars)",
+        "description": "Terceira análise relevante dos dados (max 150 chars).",
+        "recommendation": "Terceira recomendação para melhoria ou atenção (max 100 chars)."
+      }
+    ]
+    """.trimIndent())
+    promptBuilder.appendLine("IMPORTANTE: Responda APENAS com o array JSON. Não inclua nenhum texto, introdução, despedida ou qualquer outra coisa fora do array JSON.")
+    promptBuilder.appendLine("Se os dados forem insuficientes para 3 insights significativos, forneça quantos forem possíveis, mantendo o formato de array JSON. Se nenhum insight puder ser gerado, retorne um array JSON vazio: [].")
+
+    return promptBuilder.toString()
+}

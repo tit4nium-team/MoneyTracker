@@ -1,62 +1,70 @@
 package com.example.moneytracker.service
 
 import android.util.Log
-import com.example.moneytracker.config.ApiConfig
-import com.google.ai.client.generativeai.GenerativeModel
+import com.google.firebase.Firebase
+import com.google.firebase.vertexai.GenerativeModel // Import do Firebase AI
+import com.google.firebase.vertexai.vertexAI
+import com.google.firebase.vertexai.generativeModel // Função de extensão
+// Potencialmente importar configs de safety/generation se for usar diferente do default
+// import com.google.firebase.vertexai.type.generationConfig
+// import com.google.firebase.vertexai.type.safetySetting
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-internal class AndroidGilService {
-    private var model: GenerativeModel? = null
-    
-    private val availableModels = listOf(
-        "gemini-2.0-flash-lite"
-    )
-    
-    private var currentModelIndex = 0
+// Assumindo que UserFinancialContext, GilServiceFactory e GilService (classe base/interface) ainda existem.
+// Se UserFinancialContext ou GilService vêm de commonMain, eles devem estar lá.
 
-    private suspend fun tryNextModel(): GenerativeModel {
-        if (currentModelIndex >= availableModels.size) {
-            throw IllegalStateException("Tried all available models without success")
+import com.google.firebase.vertexai.type.generationConfig // Para configurações de geração
+import com.google.firebase.vertexai.type.safetySetting // Para configurações de segurança
+import com.google.firebase.vertexai.type.HarmCategory
+import com.google.firebase.vertexai.type.BlockThreshold
+
+// Assumindo que UserFinancialContext, GilServiceFactory e GilService (classe base/interface) ainda existem.
+// Se UserFinancialContext ou GilService vêm de commonMain, eles devem estar lá.
+
+internal class AndroidGilService {
+    
+    private val generativeModel: GenerativeModel by lazy {
+        try {
+            // Você pode querer configurações diferentes para o Gil
+            val safetySettings = listOf(
+                safetySetting(HarmCategory.HARASSMENT, BlockThreshold.ONLY_HIGH),
+                // Adicione outras configurações de segurança conforme necessário
+            )
+            val generationConfig = generationConfig {
+                temperature = 0.8f // Um pouco mais criativo para chat?
+                // Outras configs
+            }
+
+            Log.d("GilService", "Inicializando modelo Firebase AI para GilService...")
+            Firebase.vertexAI.generativeModel(
+                modelName = "gemini-1.5-flash", // Ou um modelo específico para chat se disponível/preferido
+                safetySettings = safetySettings,
+                generationConfig = generationConfig
+            ).also {
+                Log.d("GilService", "Modelo Firebase AI para GilService inicializado.")
+            }
+        } catch (e: Exception) {
+            Log.e("GilService", "CRITICAL: Erro ao inicializar GenerativeModel para GilService: ${e.message}", e)
+            throw IllegalStateException("Falha ao inicializar o modelo de IA para GilService", e)
         }
-        
-        val modelName = availableModels[currentModelIndex]
-        currentModelIndex++
-        
-        Log.i("GilService", "Trying model: $modelName")
-        
-        return GenerativeModel(
-            modelName = modelName,
-            apiKey = ApiConfig.GEMINI_API_KEY
-        )
     }
 
     suspend fun chat(message: String, context: UserFinancialContext? = null): String {
         return withContext(Dispatchers.IO) {
             try {
-                if (model == null) {
-                    model = tryNextModel()
-                }
-                
                 val prompt = buildPrompt(message, context)
-                val response = model!!.generateContent(prompt)
+                Log.i("GilService", "Enviando prompt para o Gil (Firebase AI)...")
+                val response = generativeModel.generateContent(prompt)
                 response.text ?: "Desculpe, não consegui processar sua pergunta no momento."
             } catch (e: Exception) {
-                Log.e("GilService", "Error with current model: ${e.message}")
-                
-                try {
-                    model = tryNextModel()
-                    val prompt = buildPrompt(message, context)
-                    val response = model!!.generateContent(prompt)
-                    response.text ?: "Desculpe, não consegui processar sua pergunta no momento."
-                } catch (e: Exception) {
-                    Log.e("GilService", "Error chatting with Gil", e)
-                    "Desculpe, estou com dificuldades técnicas no momento. Tente novamente mais tarde."
-                }
+                Log.e("GilService", "Erro ao chamar generateContent para GilService: ${e.message}", e)
+                "Desculpe, estou com dificuldades técnicas no momento. Tente novamente mais tarde."
             }
         }
     }
 
+    // buildPrompt e formatMoney podem permanecer os mesmos se a lógica de formatação do prompt for a mesma.
     private fun buildPrompt(message: String, context: UserFinancialContext? = null): String {
         return """
             Você é o Gil, um assistente financeiro amigável e profissional. Você deve:
