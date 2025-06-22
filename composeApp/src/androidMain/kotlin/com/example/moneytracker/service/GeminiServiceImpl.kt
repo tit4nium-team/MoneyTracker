@@ -1,88 +1,83 @@
 package com.example.moneytracker.service
 
-import com.example.moneytracker.BuildConfig
-import com.example.moneytracker.model.Transaction
-import com.example.moneytracker.model.Insight
-import com.google.ai.client.generativeai.GenerativeModel
+import com.example.moneytracker.model.Transaction // Manter por enquanto
+import com.example.moneytracker.model.Insight // Manter por enquanto
+// Removido: import com.google.ai.client.generativeai.GenerativeModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.*
+import kotlinx.datetime.* // Manter para parseDate e manipulação de datas
 import kotlin.math.abs
 import android.util.Log
-import com.example.moneytracker.config.ApiConfig
+// Removido: import com.example.moneytracker.config.ApiConfig // ApiConfig foi deletado
+// Removido: import com.example.moneytracker.BuildConfig // Se ApiConfig usava, pode não ser mais necessário aqui diretamente
+
+// Imports do Firebase Vertex AI SDK serão adicionados aqui quando implementarmos
+// import com.google.firebase.vertexai.FirebaseVertexAI
+// import com.google.firebase.vertexai.type.GenerateContentResponse ---- (ou o tipo de resposta correto)
 
 
-internal class AndroidGeminiService {
-    private var model: GenerativeModel? = null
-    
-    private val availableModels = listOf(
-        "gemini-2.0-flash-lite"
-    )
-    
-    private var currentModelIndex = 0
+// Esta classe será refatorada para ser o 'actual class AndroidGeminiManager'
+// e usará o SDK Firebase AI para Android (FirebaseVertexAI).
+internal class AndroidGeminiManagerPlaceholder { // Renomeado temporariamente de AndroidGeminiService
 
-    private suspend fun tryNextModel(): GenerativeModel {
-        if (currentModelIndex >= availableModels.size) {
-            throw IllegalStateException("Tried all available models without success")
-        }
-        
-        val modelName = availableModels[currentModelIndex]
-        currentModelIndex++
-        
-        Log.i("GeminiService", "Trying model: $modelName")
-        
-        return GenerativeModel(
-            modelName = modelName,
-            apiKey = ApiConfig.GEMINI_API_KEY
-        )
-    }
+    // private var generativeModel: com.google.firebase.vertexai.GenerativeModel? = null // Exemplo de como seria com Firebase AI
+
+    // A lógica de 'availableModels' e 'tryNextModel' pode mudar ou ser simplificada
+    // dependendo de como o Firebase AI SDK lida com a seleção de modelos e retries.
 
     suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
         if (transactions.isEmpty()) {
+            // Esta lógica de boas-vindas pode ser mantida ou movida para commonMain se for genérica
             return listOf(
                 Insight(
                     title = "Bem-vindo ao Money Tracker",
-                    description = "Adicione suas primeiras transações para receber insights personalizados",
-                    recommendation = "Comece registrando suas despesas diárias para obter uma análise detalhada."
+                    description = "Adicione suas primeiras transações para receber insights personalizados.",
+                    recommendation = "Comece registrando suas despesas diárias."
                 )
             )
         }
 
-        return withContext(Dispatchers.IO) {
-            try {
-                if (model == null) {
-                    model = tryNextModel()
-                }
-                
-                val prompt = buildFinancialPrompt(transactions)
-                val response = model!!.generateContent(prompt)
-                val text = response.text ?: throw IllegalStateException("Resposta vazia do modelo")
-                
-                // Converte a resposta em insights
-                parseInsights(text)
-            } catch (e: Exception) {
-                Log.e("GeminiService", "Error with current model: ${e.message}")
-                
-                try {
-                    model = tryNextModel()
-                    val prompt = buildFinancialPrompt(transactions)
-                    val response = model!!.generateContent(prompt)
-                    val text = response.text ?: throw IllegalStateException("Resposta vazia do modelo")
-                    parseInsights(text)
-                } catch (e: Exception) {
-                    Log.e("GeminiService", "Error generating insights", e)
-                    listOf(
-                        Insight(
-                            title = "Erro ao Gerar Insights",
-                            description = "Não foi possível analisar suas transações no momento.",
-                            recommendation = "Por favor, tente novamente mais tarde."
-                        )
-                    )
-                }
-            }
+        return withContext(Dispatchers.IO) { // Ou Dispatchers.Default, dependendo da natureza da chamada do Firebase AI
+            // TODO: Implementar lógica com Firebase AI SDK
+            // 1. Inicializar FirebaseVertexAI (pode ser feito uma vez e reutilizado)
+            //    val vertexAI = Firebase.vertexAI
+            //    if (generativeModel == null) {
+            //        generativeModel = vertexAI.generativeModel(modelName = "gemini-1.5-flash") // ou outro modelo
+            //    }
+            // 2. Construir o prompt (a função buildFinancialPrompt pode ser reutilizada ou adaptada)
+            //    val promptText = buildFinancialPrompt(transactions)
+            // 3. Chamar o modelo:
+            //    try {
+            //        val response = generativeModel!!.generateContent(promptText)
+            //        val insightsJson = response.text ?: ""
+            //        parseInsights(insightsJson) // A função parseInsights pode ser reutilizada
+            //    } catch (e: Exception) {
+            //        Log.e("AndroidGeminiManager", "Erro ao gerar insights com Firebase AI: ${e.message}", e)
+            //        // Retornar um insight de erro padrão
+            //        listOf(
+            //            Insight(
+            //                title = "Erro ao Gerar Insights",
+            //                description = "Não foi possível conectar ao serviço de IA.",
+            //                recommendation = "Verifique sua conexão ou tente mais tarde."
+            //            )
+            //        )
+            //    }
+
+            // Placeholder enquanto a implementação real não está pronta:
+            Log.d("AndroidGeminiManager", "generateFinancialInsights chamado, implementação pendente.")
+            listOf(
+                Insight(
+                    title = "Android Insights (Placeholder)",
+                    description = "Implementação pendente com Firebase AI SDK.",
+                    recommendation = "Verifique a configuração do Firebase para Android."
+                )
+            )
         }
     }
 
+    // A função buildFinancialPrompt pode ser movida para commonMain ou para uma classe utilitária
+    // se a lógica de construção do prompt for a mesma para ambas as plataformas.
+    // Por enquanto, ela pode permanecer aqui e ser adaptada.
     private fun buildFinancialPrompt(transactions: List<Transaction>): String {
         // Ordena as transações por data, da mais recente para a mais antiga
         val sortedTransactions = transactions.sortedByDescending { 
@@ -103,15 +98,22 @@ internal class AndroidGeminiService {
         val monthlyData = sortedTransactions
             .groupBy { transaction ->
                 val dateTime = parseDate(transaction.date.toString())
-                "${dateTime.month.name} ${dateTime.year}"
+                // Usar o número do mês para evitar problemas com nomes de meses em diferentes locales no prompt
+                // Formato MM-YYYY para consistência
+                "${dateTime.monthNumber.toString().padStart(2, '0')}-${dateTime.year}"
             }
             .toList()
             .sortedByDescending { (monthYear, _) ->
-                // Extrai o mês e ano da string e converte para data para ordenação
-                val (month, year) = monthYear.split(" ")
-                val monthNumber = Month.valueOf(month).ordinal
-                year.toInt() * 100 + monthNumber // Formato YYYYMM para ordenação correta
+                val (month, year) = monthYear.split("-")
+                year.toInt() * 100 + month.toInt()
             }
+            .map { (monthYear, trans) -> // Remapear para nome do mês se desejado para o prompt final
+                 val (monthNum, year) = monthYear.split("-")
+                 val monthName = Month(monthNum.toInt()).name // Requer que Month.name seja o que você espera
+                 val monthlyExpenses = trans.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+                "- $monthName $year: R$ ${String.format("%.2f", monthlyExpenses)}"
+            }
+
 
         return """
             Atue como um consultor financeiro profissional e analise os seguintes dados financeiros:
@@ -125,10 +127,7 @@ internal class AndroidGeminiService {
             ${categoryExpenses.joinToString("\n") { "- ${it.first}: R$ ${String.format("%.2f", it.second)}" }}
             
             Dados Mensais (do mais recente ao mais antigo):
-            ${monthlyData.map { (monthYear, transactions) ->
-                val monthlyExpenses = transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
-                "- ${monthYear}: R$ ${String.format("%.2f", monthlyExpenses)}"
-            }.joinToString("\n")}
+            ${monthlyData.joinToString("\n")}
             
             Gere 3 insights diferentes no seguinte formato JSON:
             [
@@ -149,19 +148,17 @@ internal class AndroidGeminiService {
         """.trimIndent()
     }
 
+    // A função parseInsights também pode ser movida para commonMain ou utilitário.
     private fun parseInsights(text: String): List<Insight> {
         return try {
-            // Remove qualquer texto antes e depois do JSON
             val jsonStr = text.substringAfter("[").substringBeforeLast("]")
             
-            // Divide em objetos individuais
             jsonStr.split("},{")
                 .map { str -> 
                     val cleanStr = str.trim()
                         .removeSurrounding("{", "}")
                         .trim()
                     
-                    // Parse manual dos campos
                     val title = cleanStr.substringAfter("\"title\": \"").substringBefore("\"")
                     val description = cleanStr.substringAfter("\"description\": \"").substringBefore("\"")
                     val recommendation = cleanStr.substringAfter("\"recommendation\": \"").substringBefore("\"")
@@ -173,35 +170,45 @@ internal class AndroidGeminiService {
                     )
                 }
         } catch (e: Exception) {
-            Log.e("GeminiService", "Error parsing insights", e)
+            Log.e("AndroidGeminiManager", "Erro ao parsear insights: ${e.message}", e)
             listOf(
                 Insight(
-                    title = "Análise Financeira",
-                    description = text.take(150),
-                    recommendation = "Continue monitorando suas finanças regularmente."
+                    title = "Erro de Análise",
+                    description = "Não foi possível processar a resposta do serviço de IA.",
+                    recommendation = "Tente novamente mais tarde."
                 )
             )
         }
     }
 
+    // A função parseDate provavelmente precisará de uma solução KMP ou específica da plataforma
+    // se o formato "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy" for estritamente necessário e vier de uma fonte externa.
+    // Se `transaction.date` for um timestamp Long ou um formato ISO, a conversão é mais fácil em KMP.
+    // Por agora, mantendo a implementação Android original que usa SimpleDateFormat.
     private fun parseDate(dateStr: String): LocalDateTime {
         return try {
+            // Esta implementação é específica do Android (java.text.SimpleDateFormat)
+            // Precisará de uma alternativa KMP se esta função for para commonMain.
             val pattern = "EEE MMM dd HH:mm:ss 'GMT'XXX yyyy"
             val formatter = java.text.SimpleDateFormat(pattern, java.util.Locale.US)
             val parsedDate = formatter.parse(dateStr)
             val instant = Instant.fromEpochMilliseconds(parsedDate.time)
             instant.toLocalDateTime(TimeZone.currentSystemDefault())
         } catch (e: Exception) {
+            Log.w("AndroidGeminiManager", "Erro ao parsear data '$dateStr', usando data atual como fallback: ${e.message}")
             Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         }
     }
 }
 
+// Esta função será refatorada para instanciar o novo AndroidGeminiManager
+// e se adequar à nova estrutura com PlatformGeminiManager.
 internal actual fun initializeGeminiService() {
-    val androidService = AndroidGeminiService()
+    val androidManager = AndroidGeminiManagerPlaceholder() // Será o novo manager
     GeminiServiceFactory.setInstance(object : InsightGenerator() {
         override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
-            return androidService.generateFinancialInsights(transactions)
+            // Esta chamada será para o novo AndroidGeminiManager
+            return androidManager.generateFinancialInsights(transactions)
         }
     })
 }

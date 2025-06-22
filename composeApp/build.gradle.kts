@@ -30,7 +30,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
-            export(libs.generativeai) // Export the dependency to the framework
+            // export(libs.generativeai) // REMOVED
         }
     }
 
@@ -39,10 +39,12 @@ kotlin {
             dependencies {
                 implementation(compose.preview)
                 implementation(libs.androidx.activity.compose)
-                // implementation(platform("com.google.firebase:firebase-bom:32.7.4")) // BOM pode ser gerenciado pelo plugin dev.gitlive ou precisar de ajuste
-                // implementation("com.google.firebase:firebase-auth-ktx") // Comentado, será fornecido por dev.gitlive
-                // implementation("com.google.firebase:firebase-firestore-ktx") // Comentado, será fornecido por dev.gitlive
-                implementation("com.google.firebase:firebase-analytics-ktx") // Mantido se usado diretamente no androidMain
+                // Firebase BoM
+                implementation(platform(libs.firebase.bom))
+                // Firebase Vertex AI (Gemini) SDK
+                implementation(libs.firebase.vertexai)
+                // Outras dependências Firebase que você já usa
+                implementation("com.google.firebase:firebase-analytics-ktx")
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
             }
         }
@@ -61,7 +63,7 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
-                implementation(libs.generativeai) // Uses version from libs.versions.toml (0.5.0)
+                // implementation(libs.generativeai) // REMOVED - Will use Firebase AI SDK
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3") // Already present, good for coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2") // Already present, good for JSON parsing
 
@@ -74,8 +76,7 @@ kotlin {
         val iosMain by getting {
             dependencies {
                 // If there are any iOS-specific dependencies for Gemini, add them here.
-                // For now, the common KMP library should suffice.
-                api(libs.generativeai) // Expose Gemini library to iOS framework
+                // api(libs.generativeai) // REMOVED
             }
         }
         commonTest.dependencies {
