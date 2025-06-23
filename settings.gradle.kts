@@ -26,6 +26,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven("https://maven.google.com") // Added Google's Maven repository
     }
 }
 
