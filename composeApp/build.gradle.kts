@@ -43,12 +43,14 @@ kotlin {
                 // implementation("com.google.firebase:firebase-firestore-ktx") // Comentado, será fornecido por dev.gitlive
                 implementation("com.google.firebase:firebase-analytics-ktx") // Mantido se usado diretamente no androidMain
                 implementation("androidx.work:work-runtime-ktx:2.9.0")
+                implementation(libs.firebase.ai.vertex) // Added Firebase AI Vertex
             }
         }
         val commonMain by getting {
             dependencies {
                 implementation("dev.gitlive:firebase-auth:1.11.1") // Adicionado dev.gitlive
                 implementation("dev.gitlive:firebase-firestore:1.11.1") // Adicionado dev.gitlive
+                implementation(libs.firebase.ai.vertex) // Added Firebase AI Vertex
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -60,10 +62,10 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
-                implementation(libs.generativeai)
+                // implementation(libs.generativeai) // Removed old Gemini dependency
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-                implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+                // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Removed old Gemini dependency
                 val composeMaterialVersion = "1.5.4"
                 //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
                 implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
@@ -130,6 +132,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+    // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Removed old Gemini dependency
 }
 
