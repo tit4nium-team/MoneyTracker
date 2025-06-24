@@ -9,13 +9,18 @@ import kotlinx.datetime.*
 import kotlin.math.abs
 import platform.Foundation.NSLog
 
-// iOS-specific implementation for Firebase Gemini Service
-internal class IOSFirebaseGeminiService {
+// Actual class implementing the expect InsightGenerator for iOS
+actual class InsightGenerator actual constructor() {
     // Ensure this model name is available and configured in your Firebase project for Vertex AI
-    private val modelName = "gemini-1.5-flash-latest"
-    private val generativeModel = FirebaseVertexAI.getInstance().generativeModel(modelName)
+    private val modelName = "gemini-1.5-flash-latest" // Example model name for Firebase Vertex AI
 
-    suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
+    // GenerativeModel might need to be initialized after FirebaseApp.configure() is called.
+    // Consider lazy initialization or initializing it in an init block if direct init causes issues.
+    private val generativeModel by lazy {
+        FirebaseVertexAI.getInstance().generativeModel(modelName)
+    }
+
+    actual suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
         if (transactions.isEmpty()) {
             return listOf(
                 Insight(
@@ -26,7 +31,7 @@ internal class IOSFirebaseGeminiService {
             )
         }
 
-        return withContext(Dispatchers.IO) { // Dispatchers.IO might not be directly applicable in Kotlin/Native for iOS in the same way as JVM. Consider platform-specific dispatchers if needed.
+        return withContext(Dispatchers.Default) { // Changed from Dispatchers.IO to Dispatchers.Default for Kotlin/Native compatibility
             try {
                 val prompt = buildFinancialPrompt(transactions)
                 val response = generativeModel.generateContent(prompt) // Ensure this API is consistent for iOS Kotlin Multiplatform
@@ -47,54 +52,65 @@ internal class IOSFirebaseGeminiService {
     }
 
     private fun buildFinancialPrompt(transactions: List<Transaction>): String {
-        val sortedTransactions = transactions.sortedByDescending {
+        val sortedTransactions: List<Transaction> = transactions.sortedByDescending {
             parseDate(it.date.toString()).toInstant(TimeZone.currentSystemDefault())
         }
 
-        val totalIncome = sortedTransactions.filter { it.amount > 0 }.sumOf { it.amount }
-        val totalExpenses = sortedTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
-        val balance = totalIncome - totalExpenses
+        val totalIncome: Double = sortedTransactions.filter { it.amount > 0 }.sumOf { it.amount }
+        val totalExpenses: Double = sortedTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+        val balance: Double = totalIncome - totalExpenses
 
-        val categoryExpenses = sortedTransactions
+        val categoryExpenses: List<Pair<String, Double>> = sortedTransactions
             .filter { it.amount < 0 }
             .groupBy { it.category.name }
-            .mapValues { it.value.sumOf { transaction -> abs(transaction.amount) } }
+            .mapValues { entry -> entry.value.sumOf { transaction -> abs(transaction.amount) } }
             .toList()
-            .sortedByDescending { it.second }
+            .sortedByDescending { pair -> pair.second }
 
-        val monthlyData = sortedTransactions
+        val monthlyData: List<Pair<String, List<Transaction>>> = sortedTransactions
             .groupBy { transaction ->
-                val dateTime = parseDate(transaction.date.toString())
+                val dateTime: LocalDateTime = parseDate(transaction.date.toString())
                 // Ensure month name localization or use numerical month if issues arise
                 "${dateTime.month.name} ${dateTime.year}"
             }
             .toList()
             .sortedByDescending { (monthYear, _) ->
-                val parts = monthYear.split(" ")
+                val parts: List<String> = monthYear.split(" ")
                 if (parts.size == 2) {
-                    val month = Month.valueOf(parts[0]) // This might need adjustment based on actual month name format/localization
-                    val year = parts[1].toInt()
-                    year * 100 + month.ordinal
+                    try {
+                        val month = Month.valueOf(parts[0].uppercase()) // Ensure uppercase for enum matching
+                        val year = parts[1].toInt()
+                        year * 100 + month.ordinal
+                    } catch (e: Exception) {
+                        NSLog("Error parsing monthYear for sorting: $monthYear, Error: ${e.message}")
+                        0 // Fallback
+                    }
                 } else {
                     0 // Fallback for sorting if format is unexpected
                 }
             }
 
+        // Using manual string formatting to avoid issues with Double.format extension in Kotlin/Native
+        fun formatCurrency(value: Double): String {
+            val roundedValue = (kotlin.math.round(value * 100) / 100.0)
+            return "R$ $roundedValue" // Basic formatting, consider more robust for localization
+        }
+
         return """
             Atue como um consultor financeiro profissional e analise os seguintes dados financeiros:
 
             Resumo Financeiro:
-            - Renda Total: R$ ${totalIncome.format(2)}
-            - Despesas Totais: R$ ${totalExpenses.format(2)}
-            - Saldo: R$ ${balance.format(2)}
+            - Renda Total: ${formatCurrency(totalIncome)}
+            - Despesas Totais: ${formatCurrency(totalExpenses)}
+            - Saldo: ${formatCurrency(balance)}
 
             Despesas por Categoria:
-            ${categoryExpenses.joinToString("\n") { "- ${it.first}: R$ ${it.second.format(2)}" }}
+            ${categoryExpenses.joinToString("\n") { "- ${it.first}: ${formatCurrency(it.second)}" }}
 
             Dados Mensais (do mais recente ao mais antigo):
-            ${monthlyData.map { (monthYear, transactions) ->
-                val monthlyExpenses = transactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
-                "- ${monthYear}: R$ ${monthlyExpenses.format(2)}"
+            ${monthlyData.map { (monthYear, monthTransactions) -> // Changed variable name to avoid conflict
+                val monthlyExpenses = monthTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
+                "- ${monthYear}: ${formatCurrency(monthlyExpenses)}"
             }.joinToString("\n")}
 
             Gere 3 insights diferentes no seguinte formato JSON:
@@ -116,23 +132,23 @@ internal class IOSFirebaseGeminiService {
         """.trimIndent()
     }
 
-    // Helper to format double to string with 2 decimal places, useful for currency.
-    private fun Double.format(digits: Int) = "%.${digits}f".format(this)
+    // Helper to format double to string with 2 decimal places, useful for currency. (Removed as it was causing issues, direct formatting used in prompt)
+    // private fun Double.format(digits: Int) = "%.${digits}f".format(this)
 
 
     private fun parseInsights(text: String): List<Insight> {
         return try {
-            val jsonStr = text.substringAfter("[").substringBeforeLast("]")
+            val jsonStr: String = text.substringAfter("[").substringBeforeLast("]")
 
             jsonStr.split("},{")
-                .map { str ->
-                    val cleanStr = str.trim()
+                .map { str: String ->
+                    val cleanStr: String = str.trim()
                         .removeSurrounding("{", "}")
                         .trim()
 
-                    val title = cleanStr.substringAfter("\"title\": \"").substringBefore("\"")
-                    val description = cleanStr.substringAfter("\"description\": \"").substringBefore("\"")
-                    val recommendation = cleanStr.substringAfter("\"recommendation\": \"").substringBefore("\"")
+                    val title: String = cleanStr.substringAfter("\"title\": \"").substringBefore("\"")
+                    val description: String = cleanStr.substringAfter("\"description\": \"").substringBefore("\"")
+                    val recommendation: String = cleanStr.substringAfter("\"recommendation\": \"").substringBefore("\"")
 
                     Insight(
                         title = title,
@@ -142,7 +158,7 @@ internal class IOSFirebaseGeminiService {
                 }
         } catch (e: Exception) {
             NSLog("IOSFirebaseGeminiService: Error parsing insights: ${e.message}")
-            listOf(
+            listOf<Insight>( // Explicit type for list
                 Insight(
                     title = "Análise Financeira",
                     description = text.take(150),
@@ -169,13 +185,20 @@ internal class IOSFirebaseGeminiService {
     }
 }
 
-// Initialization function for iOS, to be called from Swift code (e.g., AppDelegate or SwiftUI App struct)
-fun initializeIOSGeminiService() {
-    val iosService = IOSFirebaseGeminiService()
-    // Set this instance in your shared factory/service locator
-    GeminiServiceFactory.setInstance(object : InsightGenerator() {
-        override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
-            return iosService.generateFinancialInsights(transactions)
-        }
-    })
+// Actual factory implementation for iOS
+internal actual object GeminiServiceFactory {
+    // Lazy initialization of the singleton instance
+    private val instance: InsightGenerator by lazy { InsightGenerator() }
+
+    actual fun getInstance(): InsightGenerator {
+        return instance
+    }
+}
+
+// Actual initialization function for iOS
+actual fun initializeGeminiService() {
+    // Service is lazily initialized by GeminiServiceFactory.getInstance()
+    // This function can be called from Swift to ensure the factory object is initialized if needed,
+    // though direct calls to getInstance() will also initialize it.
+    NSLog("IOSFirebaseGeminiService: Initialized (or will be on first use)")
 }

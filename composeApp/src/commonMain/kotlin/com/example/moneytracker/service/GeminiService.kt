@@ -3,28 +3,15 @@ package com.example.moneytracker.service
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.Insight
 
-abstract class InsightGenerator {
-    abstract suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight>
+// Define InsightGenerator as an expect class
+expect class InsightGenerator() {
+    suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight>
 }
 
-internal object GeminiServiceFactory {
-    private var instance: InsightGenerator? = null
+// Factory to get platform-specific instance
+internal expect object GeminiServiceFactory {
+    fun getInstance(): InsightGenerator
+}
 
-    fun setInstance(service: InsightGenerator) {
-        instance = service
-    }
-
-    fun getInstance(): InsightGenerator {
-        return instance ?: object : InsightGenerator() {
-            override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
-                return listOf(
-                    Insight(
-                        title = "Serviço Indisponível",
-                        description = "Insights não disponíveis nesta plataforma",
-                        recommendation = "Tente acessar em um dispositivo Android."
-                    )
-                )
-            }
-        }.also { instance = it }
-    }
-} 
+// Expect function to initialize the platform-specific service
+expect fun initializeGeminiService()

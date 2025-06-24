@@ -50,7 +50,7 @@ kotlin {
             dependencies {
                 implementation("dev.gitlive:firebase-auth:1.11.1") // Adicionado dev.gitlive
                 implementation("dev.gitlive:firebase-firestore:1.11.1") // Adicionado dev.gitlive
-                implementation(libs.firebase.ai.vertex) // Added Firebase AI Vertex
+                // api(libs.firebase.ai.vertex) // Reverted: Removed from commonMain
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)
@@ -72,6 +72,12 @@ kotlin {
                 implementation("dev.gitlive:firebase-common:2.1.0")// This line
                 implementation("dev.gitlive:firebase-auth:2.1.0")// This line
                 implementation("dev.gitlive:firebase-firestore:2.1.0")// This line
+            }
+        }
+        val iosMain by getting {
+            dependencies {
+                // Attempt to add firebase-ai-vertex for iOS targets specifically
+                api(libs.firebase.ai.vertex)
             }
         }
         commonTest.dependencies {

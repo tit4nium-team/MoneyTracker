@@ -8,17 +8,19 @@ import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
 import kotlin.math.abs
 import android.util.Log
-import com.example.moneytracker.config.ApiConfig
+// ApiConfig may not be needed if API Key is configured via google-services.json or build configs
+// import com.example.moneytracker.config.ApiConfig
 
-internal class AndroidFirebaseGeminiService {
+// Actual class implementing the expect InsightGenerator
+actual class InsightGenerator actual constructor() {
     // TODO: Configure model name as needed, ensure it's available in Firebase Vertex AI
     private val modelName = "gemini-1.5-flash-latest" // Example model name
 
     // Access FirebaseVertexAI instance
+    // Ensure Firebase is initialized before this is called (usually in Application class or an early init block)
     private val generativeModel = FirebaseVertexAI.getInstance().generativeModel(modelName)
 
-
-    suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
+    actual suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
         if (transactions.isEmpty()) {
             return listOf(
                 Insight(
@@ -166,12 +168,21 @@ internal class AndroidFirebaseGeminiService {
     }
 }
 
-// Updated initialization function to use the new Firebase service
-internal fun initializeGeminiService() {
-    val firebaseService = AndroidFirebaseGeminiService()
-    GeminiServiceFactory.setInstance(object : InsightGenerator() {
-        override suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
-            return firebaseService.generateFinancialInsights(transactions)
-        }
-    })
+// Actual factory implementation for Android
+internal actual object GeminiServiceFactory {
+    private val instance: InsightGenerator by lazy { InsightGenerator() } // Create a singleton instance
+
+    actual fun getInstance(): InsightGenerator {
+        return instance
+    }
+}
+
+// Actual initialization function for Android
+actual fun initializeGeminiService() {
+    // The service is now lazily initialized by GeminiServiceFactory.getInstance()
+    // No explicit instance setting is needed here if using the lazy approach in the factory.
+    // If you prefer explicit initialization, you could do:
+    // GeminiServiceFactory.instance = InsightGenerator()
+    // but the lazy approach is cleaner for singletons.
+    Log.d("FirebaseGeminiService", "Android Gemini Service Initialized (or will be on first use)")
 }
