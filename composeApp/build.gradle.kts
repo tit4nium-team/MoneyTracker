@@ -76,8 +76,8 @@ kotlin {
         }
         val iosMain by getting {
             dependencies {
-                // Attempt to add firebase-ai-vertex for iOS targets specifically
-                api(libs.firebase.ai.vertex)
+                // Attempt to add firebase-ai-vertex for iOS targets specifically - REMOVED
+                // api(libs.firebase.ai.vertex)
             }
         }
         commonTest.dependencies {

@@ -2,23 +2,33 @@ package com.example.moneytracker.service
 
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.Insight
-import com.google.firebase.vertexai.FirebaseVertexAI
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.*
-import kotlin.math.abs
 import platform.Foundation.NSLog
+import platform.Foundation.NSError
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.math.abs
 
-// Actual class implementing the expect InsightGenerator for iOS
+// Importa o wrapper Swift. O nome exato pode depender da configuração do seu projeto e do nome do módulo.
+// Se o seu módulo de app iOS for "iosApp", e o arquivo Swift estiver nesse módulo,
+// o Kotlin/Native geralmente o expõe sob o nome do módulo.
+// Se esta importação direta não funcionar, pode ser necessário ajustar como o Kotlin/Native "vê" o Swift.
+// Para o Cocoapods, seria `cocoapods.FirebaseAISwiftWrapper`. Para SPM, geralmente é o nome do target/módulo.
+// Frequentemente, para código Swift dentro do seu próprio app target (como `iosApp`),
+// as classes Swift são acessíveis sem um prefixo de módulo explícito se o framework KMP
+// for corretamente vinculado e os nomes não conflitarem.
+// Vamos tentar sem prefixo de módulo por enquanto, e ajustar se necessário.
+// import FirebaseAISwiftWrapper // Esta linha pode não ser necessária ou pode precisar ser ajustada.
+
 actual class InsightGenerator actual constructor() {
-    // Ensure this model name is available and configured in your Firebase project for Vertex AI
-    private val modelName = "gemini-1.5-flash-latest" // Example model name for Firebase Vertex AI
-
-    // GenerativeModel might need to be initialized after FirebaseApp.configure() is called.
-    // Consider lazy initialization or initializing it in an init block if direct init causes issues.
-    private val generativeModel by lazy {
-        FirebaseVertexAI.getInstance().generativeModel(modelName)
-    }
+    // Instancia o wrapper Swift.
+    // A classe FirebaseAISwiftWrapper precisa estar acessível aqui.
+    // Se houver problemas de visibilidade, pode ser necessário verificar a configuração do build KMP
+    // e como o framework gerado expõe/importa símbolos do projeto iOS principal.
+    private val swiftWrapper: FirebaseAISwiftWrapper by lazy { FirebaseAISwiftWrapper() }
 
     actual suspend fun generateFinancialInsights(transactions: List<Transaction>): List<Insight> {
         if (transactions.isEmpty()) {
@@ -31,22 +41,31 @@ actual class InsightGenerator actual constructor() {
             )
         }
 
-        return withContext(Dispatchers.Default) { // Changed from Dispatchers.IO to Dispatchers.Default for Kotlin/Native compatibility
-            try {
-                val prompt = buildFinancialPrompt(transactions)
-                val response = generativeModel.generateContent(prompt) // Ensure this API is consistent for iOS Kotlin Multiplatform
-                val text = response.text ?: throw IllegalStateException("Response text is null from Firebase Vertex AI")
+        val prompt = buildFinancialPrompt(transactions)
 
-                parseInsights(text)
-            } catch (e: Exception) {
-                NSLog("IOSFirebaseGeminiService: Error generating insights: ${e.message}")
-                listOf(
-                    Insight(
-                        title = "Erro ao Gerar Insights",
-                        description = "Não foi possível analisar suas transações no momento.",
-                        recommendation = "Por favor, tente novamente mais tarde."
-                    )
-                )
+        // Usar Dispatchers.Default para operações de CPU-bound ou chamadas que bloqueiam no contexto nativo.
+        // Para chamadas de rede/IO via interop que são assíncronas (como nosso wrapper Swift),
+        // o dispatcher principal da coroutine que chama esta função pode ser suficiente,
+        // mas withContext(Dispatchers.Default) é uma escolha segura para garantir que não bloqueie o chamador.
+        return withContext(Dispatchers.Default) {
+            suspendCancellableCoroutine { continuation ->
+                swiftWrapper.generateInsights(prompt) { result, error ->
+                    if (error != null) {
+                        NSLog("IOSFirebaseGeminiService Error from Swift: ${error.localizedDescription}")
+                        continuation.resumeWithException(Exception("Error from Swift: ${error.localizedDescription} (Code: ${error.code})"))
+                    } else if (result != null) {
+                        try {
+                            val insights = parseInsights(result)
+                            continuation.resume(insights)
+                        } catch (e: Exception) {
+                            NSLog("IOSFirebaseGeminiService Parsing Error: ${e.message}")
+                            continuation.resumeWithException(e)
+                        }
+                    } else {
+                        // Este caso não deveria acontecer se o callback Swift sempre retornar resultado ou erro.
+                        continuation.resumeWithException(Exception("Unknown error or null result from FirebaseAISwiftWrapper"))
+                    }
+                }
             }
         }
     }
@@ -70,15 +89,15 @@ actual class InsightGenerator actual constructor() {
         val monthlyData: List<Pair<String, List<Transaction>>> = sortedTransactions
             .groupBy { transaction ->
                 val dateTime: LocalDateTime = parseDate(transaction.date.toString())
-                // Ensure month name localization or use numerical month if issues arise
-                "${dateTime.month.name} ${dateTime.year}"
+                "${dateTime.month.name.uppercase()} ${dateTime.year}" // Use uppercase for month name consistency if needed
             }
             .toList()
             .sortedByDescending { (monthYear, _) ->
                 val parts: List<String> = monthYear.split(" ")
                 if (parts.size == 2) {
                     try {
-                        val month = Month.valueOf(parts[0].uppercase()) // Ensure uppercase for enum matching
+                        // Ensure month name matches enum value (e.g. JANUARY, FEBRUARY)
+                        val month = Month.valueOf(parts[0].uppercase())
                         val year = parts[1].toInt()
                         year * 100 + month.ordinal
                     } catch (e: Exception) {
@@ -90,10 +109,14 @@ actual class InsightGenerator actual constructor() {
                 }
             }
 
-        // Using manual string formatting to avoid issues with Double.format extension in Kotlin/Native
         fun formatCurrency(value: Double): String {
             val roundedValue = (kotlin.math.round(value * 100) / 100.0)
-            return "R$ $roundedValue" // Basic formatting, consider more robust for localization
+            // Basic formatting, ensure it matches R$ xxx.xx or similar as expected by the prompt
+            val s = roundedValue.toString()
+            val parts = s.split('.')
+            val integerPart = parts[0]
+            val decimalPart = if (parts.size > 1) parts[1].padEnd(2, '0') else "00"
+            return "R$ $integerPart.$decimalPart"
         }
 
         return """
@@ -108,7 +131,7 @@ actual class InsightGenerator actual constructor() {
             ${categoryExpenses.joinToString("\n") { "- ${it.first}: ${formatCurrency(it.second)}" }}
 
             Dados Mensais (do mais recente ao mais antigo):
-            ${monthlyData.map { (monthYear, monthTransactions) -> // Changed variable name to avoid conflict
+            ${monthlyData.map { (monthYear, monthTransactions) ->
                 val monthlyExpenses = monthTransactions.filter { it.amount < 0 }.sumOf { abs(it.amount) }
                 "- ${monthYear}: ${formatCurrency(monthlyExpenses)}"
             }.joinToString("\n")}
@@ -132,73 +155,63 @@ actual class InsightGenerator actual constructor() {
         """.trimIndent()
     }
 
-    // Helper to format double to string with 2 decimal places, useful for currency. (Removed as it was causing issues, direct formatting used in prompt)
-    // private fun Double.format(digits: Int) = "%.${digits}f".format(this)
-
-
     private fun parseInsights(text: String): List<Insight> {
-        return try {
-            val jsonStr: String = text.substringAfter("[").substringBeforeLast("]")
+         return try {
+            // Tentativa de limpar um pouco mais o JSON, caso haja prefixos/sufixos inesperados
+            val actualJsonText = if (text.trimStart().startsWith("[")) text.trim() else text.substringAfter("[").substringBeforeLast("]") + "]"
 
-            jsonStr.split("},{")
-                .map { str: String ->
-                    val cleanStr: String = str.trim()
-                        .removeSurrounding("{", "}")
-                        .trim()
+            // Split a string of JSON objects into individual JSON object strings
+            // This assumes objects are separated by "},{"
+            // More robust parsing would involve a JSON library that can handle an array of objects directly
+            val objectsStr = actualJsonText.removePrefix("[").removeSuffix("]")
 
-                    val title: String = cleanStr.substringAfter("\"title\": \"").substringBefore("\"")
-                    val description: String = cleanStr.substringAfter("\"description\": \"").substringBefore("\"")
-                    val recommendation: String = cleanStr.substringAfter("\"recommendation\": \"").substringBefore("\"")
+            if (objectsStr.isBlank()) return emptyList()
 
-                    Insight(
-                        title = title,
-                        description = description,
-                        recommendation = recommendation
-                    )
+            objectsStr.split("},{").map { objStr ->
+                val singleJson = if (objectsStr.contains("},{")) "{${objStr}}" else objStr // Re-add braces if split
+
+                // Parse each field manually. Consider using kotlinx.serialization for robust parsing.
+                val title = singleJson.substringAfter("\"title\": \"", "").substringBefore("\"", "")
+                val description = singleJson.substringAfter("\"description\": \"", "").substringBefore("\"", "")
+                val recommendation = singleJson.substringAfter("\"recommendation\": \"", "").substringBefore("\"", "")
+
+                if (title.isEmpty() && description.isEmpty() && recommendation.isEmpty()) {
+                    throw Exception("Failed to parse insight object: $singleJson")
                 }
+                Insight(title, description, recommendation)
+            }
         } catch (e: Exception) {
-            NSLog("IOSFirebaseGeminiService: Error parsing insights: ${e.message}")
-            listOf<Insight>( // Explicit type for list
+            NSLog("IOSFirebaseGeminiService: Error parsing insights from text: '$text' - Error: ${e.message}")
+            // Fallback if parsing fails
+             listOf(
                 Insight(
-                    title = "Análise Financeira",
-                    description = text.take(150),
-                    recommendation = "Continue monitorando suas finanças regularmente."
+                    title = "Erro ao Processar Insights",
+                    description = "Não foi possível processar a resposta do servidor. Conteúdo: ${text.take(100)}...",
+                    recommendation = "Tente novamente mais tarde ou verifique o formato da resposta."
                 )
             )
         }
     }
 
-    // Date parsing needs to be compatible with iOS Kotlin/Native.
-    // The java.text.SimpleDateFormat is not available. Consider kotlinx-datetime or platform-specific date formatting.
     private fun parseDate(dateStr: String): LocalDateTime {
-         // This is a placeholder. kotlinx-datetime should be used for robust date parsing.
-         // Example: Assuming dateStr is in ISO 8601 format "YYYY-MM-DDTHH:MM:SSZ"
         return try {
-            // Attempt to parse with a common format, adjust as necessary
-            // This is a simplified example. Real-world parsing might need more robust error handling or specific formatters.
             Instant.parse(dateStr).toLocalDateTime(TimeZone.currentSystemDefault())
         } catch (e: Exception) {
             NSLog("IOSFirebaseGeminiService: Error parsing date '$dateStr': ${e.message}")
-            // Fallback to current time if parsing fails. Consider how critical accurate date parsing is.
             Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         }
     }
 }
 
-// Actual factory implementation for iOS
 internal actual object GeminiServiceFactory {
-    // Lazy initialization of the singleton instance
     private val instance: InsightGenerator by lazy { InsightGenerator() }
-
-    actual fun getInstance(): InsightGenerator {
-        return instance
-    }
+    actual fun getInstance(): InsightGenerator = instance
 }
 
-// Actual initialization function for iOS
 actual fun initializeGeminiService() {
-    // Service is lazily initialized by GeminiServiceFactory.getInstance()
-    // This function can be called from Swift to ensure the factory object is initialized if needed,
-    // though direct calls to getInstance() will also initialize it.
-    NSLog("IOSFirebaseGeminiService: Initialized (or will be on first use)")
+    // A inicialização do wrapper Swift e do Firebase (via FirebaseApp.configure)
+    // deve ocorrer no lado Swift. Esta função Kotlin pode ser usada para
+    // inicializar ansiosamente a instância Kotlin, se necessário, ou apenas para log.
+    GeminiServiceFactory.getInstance() // Isso irá inicializar o swiftWrapper na primeira chamada.
+    NSLog("IOSFirebaseGeminiService (Kotlin actual): Initialized and ready to use Swift wrapper.")
 }
