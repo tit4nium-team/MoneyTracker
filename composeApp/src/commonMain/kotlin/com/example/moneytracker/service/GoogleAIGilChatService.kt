@@ -1,9 +1,7 @@
 package com.example.moneytracker.service
 
 import com.example.moneytracker.config.getGeminiApiKey
-import dev.shreyaspatil.generativeai.GenerativeModel
-import dev.shreyaspatil.generativeai.type.generationConfig
-import dev.shreyaspatil.generativeai.type.safetySetting
+import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
 
 internal class GoogleAIGilChatService : GilService() {
 

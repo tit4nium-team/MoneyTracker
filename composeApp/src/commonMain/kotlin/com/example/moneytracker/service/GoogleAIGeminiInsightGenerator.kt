@@ -4,7 +4,7 @@ import com.example.moneytracker.config.getGeminiApiKey
 import com.example.moneytracker.model.Insight
 import com.example.moneytracker.model.Transaction
 import com.example.moneytracker.model.TransactionType
-import dev.shreyaspatil.generativeai.GenerativeModel
+import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -51,7 +51,7 @@ internal class GoogleAIGeminiInsightGenerator : InsightGenerator() {
     private fun buildPromptForInsights(transactions: List<Transaction>): String {
         val transactionSummary = transactions.joinToString("\n") {
             val type = if (it.type == TransactionType.INCOME) "Receita" else "Despesa"
-            "- ${it.descriptionText}: R$${it.amount} (${type}) em ${it.date} (Categoria: ${it.category.name})"
+            "- ${it.description}: R$${it.amount} (${type}) em ${it.date} (Categoria: ${it.category.name})"
         }
 
         // Instruct the AI to return a JSON array of objects
