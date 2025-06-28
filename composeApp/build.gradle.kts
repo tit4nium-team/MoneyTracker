@@ -10,6 +10,10 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+        vendor.set(JvmVendorSpec.AZUL) // Or other vendors like AdoptOpenJDK, etc.
+    }
     targetHierarchy.default()
 
     androidTarget {
