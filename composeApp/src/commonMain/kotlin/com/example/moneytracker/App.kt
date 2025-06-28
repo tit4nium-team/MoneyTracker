@@ -39,6 +39,11 @@ sealed class Screen(val route: String) {
 @Composable
 @Preview
 fun App() {
+    // Initialize AI Services
+    LaunchedEffect(Unit) {
+        AIServiceInitializer.initialize()
+    }
+
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Splash) }
     val repository = remember { RepositoryProvider.provideTransactionRepository() }
     val authRepository = remember { RepositoryProvider.provideAuthRepository() }

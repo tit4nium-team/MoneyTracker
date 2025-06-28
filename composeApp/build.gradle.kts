@@ -60,10 +60,11 @@ kotlin {
                 implementation(projects.shared)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.0") // Or the latest version
                 // Add any common dependencies here
-                implementation(libs.generativeai)
+                // implementation(libs.generativeai) # Removed old google AI lib
+                implementation(libs.generativeai.google.lib) // Added Shreyas Patil's KMP lib
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-                implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+                // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Removed direct old dependency
                 val composeMaterialVersion = "1.5.4"
                 //implementation("androidx.compose.material:material-icons-extended:$composeMaterialVersion")
                 implementation("dev.gitlive:firebase-firestore:2.1.0") // This line
@@ -130,6 +131,6 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
-    implementation("com.google.ai.client.generativeai:generativeai:0.1.1")
+    // implementation("com.google.ai.client.generativeai:generativeai:0.1.1") // Removed old
 }
 
