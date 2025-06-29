@@ -58,8 +58,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import com.example.moneytracker.util.DateTimeUtil
 import com.example.moneytracker.util.toCurrencyString
 import kotlinx.datetime.*
@@ -267,6 +274,154 @@ private fun CategoryBreakdownTab(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
+
+                        MonthlySpendingChart(state.transactions)
+
+                        YearlyExpensesBarChart(state.transactions)
+
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MonthlySpendingChart(transactions: List<Transaction>, modifier: Modifier = Modifier) {
+    // Dados de exemplo para o gráfico mensal
+
+    //val maxSpending = monthlyData.maxOfOrNull { it.second }?.takeIf { it > 0 } ?: 1.0
+
+    val barWidth: Dp = 32.dp
+    val chartActualHeight: Dp = 120.dp
+    val barSpacing: Dp = 16.dp
+    val textMeasureAreaHeight: Dp = 20.dp
+    val textPaddingTop: Dp = 4.dp
+    val totalChartHeight = chartActualHeight + textMeasureAreaHeight
+    val lightGreen = Color(0xFF4CAF50)
+
+    val textMeasurer = rememberTextMeasurer()
+    val monthTextStyle = TextStyle(
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Total monthly spending", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(modifier = Modifier.height(totalChartHeight).fillMaxWidth()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    transactions.forEachIndexed { index, transaction ->
+                        val barHeightPx = (transaction.amount / 100 * chartActualHeight.toPx())
+                            .toFloat()
+                            .coerceAtLeast(0f)
+
+                        val barXOffset = index * (barWidth.toPx() + barSpacing.toPx())
+                        val barYOffset = chartActualHeight.toPx() - barHeightPx
+
+                        drawRoundRect(
+                            color = lightGreen,
+                            topLeft = Offset(x = barXOffset, y = barYOffset),
+                            size = androidx.compose.ui.geometry.Size(barWidth.toPx(), barHeightPx),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx())
+                        )
+
+                        val textLayoutResult = textMeasurer.measure(
+                            text = transaction.date,
+                            style = monthTextStyle
+                        )
+
+                        val textXOffset =
+                            barXOffset + (barWidth.toPx() / 2) - (textLayoutResult.size.width / 2)
+                        val textYOffset = chartActualHeight.toPx() + textPaddingTop.toPx()
+
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            topLeft = Offset(x = textXOffset, y = textYOffset)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun YearlyExpensesBarChart(transactions: List<Transaction>, modifier: Modifier = Modifier) {
+    val expensesByYear = transactions.filter { it.type == TransactionType.EXPENSE }
+        .groupBy { it.date.take(4) }
+        .mapValues { it.value.sumOf { t -> t.amount } }
+    val years = expensesByYear.keys.sorted()
+    val maxExpense = expensesByYear.values.maxOrNull()?.takeIf { it > 0 } ?: 1.0
+
+    val barWidth: Dp = 32.dp
+    val chartActualHeight: Dp = 120.dp // Renomeado de chartHeight para clareza
+    val barSpacing: Dp = 16.dp
+    val textMeasureAreaHeight: Dp = 20.dp // Espaço reservado para o texto abaixo das barras
+    val textPaddingTop: Dp = 4.dp // Espaçamento entre a base do gráfico e o topo do texto
+    val totalChartHeight = chartActualHeight + textMeasureAreaHeight
+
+    val textMeasurer = rememberTextMeasurer()
+    val yearTextStyle = TextStyle(
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth(),
+        // .padding(16.dp), // Padding será gerenciado pela LazyColumn e espaçamento interno
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Yearly expenses", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(modifier = Modifier.height(totalChartHeight).fillMaxWidth()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    // size.height aqui é totalChartHeight.toPx()
+
+                    years.forEachIndexed { index, year ->
+                        val expense = expensesByYear[year] ?: 0.0
+                        // Calcula a altura da barra baseada na altura real do gráfico (chartActualHeight)
+                        val barHeightPx = (expense / maxExpense * chartActualHeight.toPx())
+                            .toFloat()
+                            .coerceAtLeast(0f)
+
+                        val barXOffset = index * (barWidth.toPx() + barSpacing.toPx())
+                        val barYOffset =
+                            chartActualHeight.toPx() - barHeightPx // Y é de cima para baixo
+
+                        drawRoundRect(
+                            color = Color(0xFF4CAF50), // Verde claro definido (Success color)
+                            topLeft = Offset(x = barXOffset, y = barYOffset),
+                            size = androidx.compose.ui.geometry.Size(barWidth.toPx(), barHeightPx),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()) // Reduzir um pouco o raio
+                        )
+
+                        // Medir e desenhar o texto do ano usando DrawScope.drawText
+                        val textLayoutResult = textMeasurer.measure(
+                            text = year,
+                            style = yearTextStyle
+                        )
+
+                        val textXOffset =
+                            barXOffset + (barWidth.toPx() / 2) - (textLayoutResult.size.width / 2)
+                        val textYOffset = chartActualHeight.toPx() + textPaddingTop.toPx()
+
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            topLeft = Offset(x = textXOffset, y = textYOffset)
+                        )
                     }
                 }
             }
