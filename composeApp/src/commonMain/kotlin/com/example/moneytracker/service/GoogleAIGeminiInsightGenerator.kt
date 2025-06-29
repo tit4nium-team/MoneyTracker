@@ -20,7 +20,7 @@ private data class AIInsight(
 internal class GoogleAIGeminiInsightGenerator : InsightGenerator() {
 
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-pro", // Or another suitable model
+        modelName = "gemini-2.0-flash-lite", // Or another suitable model
         apiKey = getGeminiApiKey()
     )
 

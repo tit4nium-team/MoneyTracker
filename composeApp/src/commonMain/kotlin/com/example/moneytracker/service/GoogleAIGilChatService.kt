@@ -6,7 +6,7 @@ import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
 internal class GoogleAIGilChatService : GilService() {
 
     private val generativeModel = GenerativeModel(
-        modelName = "gemini-pro", // Or another suitable model for chat
+        modelName = "gemini-2.0-flash-lite", // Or another suitable model for chat
         apiKey = getGeminiApiKey(),
         // Optional: Configure safety settings and generation parameters if needed
         // safetySettings = listOf(safetySetting(...)),
