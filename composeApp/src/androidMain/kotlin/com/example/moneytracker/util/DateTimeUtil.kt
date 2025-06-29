@@ -1,5 +1,7 @@
 package com.example.moneytracker.util
 
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.toLocalDate
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,6 +40,19 @@ actual object DateTimeUtil {
                 return outputFormatter.format(date)
             }
 
+            // Try parsing common ISO 8601 format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z' or yyyy-MM-dd
+            if (dateString.contains("T")) {
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+                inputFormat.timeZone = TimeZone.getTimeZone("UTC") // Assuming UTC for 'Z'
+                val date = inputFormat.parse(dateString)
+                return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date ?: Date())
+            } else if (dateString.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
+                 val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                 val date = inputFormat.parse(dateString)
+                 return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(date ?: Date())
+            }
+
+
             // Fallback to trying the complex "EEE MMM dd..." pattern if it's not a simple Long
             // This part is highly dependent on the exact string format and Locale.
             // Consider standardizing on ISO 8601 or epoch millis in common code.
@@ -59,6 +74,34 @@ actual object DateTimeUtil {
             formatter.format(date)
         } catch (e: Exception) {
             "Data inválida"
+        }
+    }
+
+    actual fun stringToDate(dateString: String): LocalDate {
+        // Handles "yyyy-MM-dd" or "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        return try {
+            if (dateString.contains("T")) {
+                dateString.substringBefore("T").toLocalDate()
+            } else {
+                dateString.toLocalDate()
+            }
+        } catch (e: Exception) {
+            // Attempt to parse other known formats if direct conversion fails
+            try {
+                // Example: "Wed Jun 11 20:30:02 GMT-03:00 2025"
+                val complexFormat = SimpleDateFormat("EEE MMM dd HH:mm:ss 'GMT'XXX yyyy", Locale.US)
+                val parsedDate = complexFormat.parse(dateString)
+                if (parsedDate != null) {
+                    // Convert java.util.Date to kotlinx.datetime.LocalDate
+                    val cal = java.util.Calendar.getInstance()
+                    cal.time = parsedDate
+                    return LocalDate(cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH) + 1, cal.get(java.util.Calendar.DAY_OF_MONTH))
+                }
+            } catch (pe: Exception) {
+                // Log parsing exception or handle
+            }
+            // Fallback to current date if all parsing fails
+            kotlinx.datetime.Clock.System.now().toLocalDate()
         }
     }
 }
