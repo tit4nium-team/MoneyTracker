@@ -1206,10 +1206,20 @@ private fun YearlyExpensesBarChart(transactions: List<Transaction>, modifier: Mo
         .mapValues { it.value.sumOf { t -> t.amount } }
     val years = expensesByYear.keys.sorted()
     val maxExpense = expensesByYear.values.maxOrNull()?.takeIf { it > 0 } ?: 1.0
+
     val barWidth: Dp = 32.dp
-    val chartHeight: Dp = 120.dp
+    val chartActualHeight: Dp = 120.dp // Renomeado de chartHeight para clareza
     val barSpacing: Dp = 16.dp
+    val textMeasureAreaHeight: Dp = 20.dp // Espaço reservado para o texto abaixo das barras
+    val textPaddingTop: Dp = 4.dp // Espaçamento entre a base do gráfico e o topo do texto
+    val totalChartHeight = chartActualHeight + textMeasureAreaHeight
+
     val textMeasurer = rememberTextMeasurer()
+    val yearTextStyle = TextStyle(
+        fontSize = 12.sp,
+        textAlign = TextAlign.Center,
+        color = MaterialTheme.colorScheme.onSurface
+    )
 
     Card(
         modifier = modifier
@@ -1221,32 +1231,40 @@ private fun YearlyExpensesBarChart(transactions: List<Transaction>, modifier: Mo
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Yearly expenses", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(12.dp))
-            Box(modifier = Modifier.height(chartHeight).fillMaxWidth()) {
+            Box(modifier = Modifier.height(totalChartHeight).fillMaxWidth()) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    years.forEachIndexed { i, year ->
+                    // size.height aqui é totalChartHeight.toPx()
+
+                    years.forEachIndexed { index, year ->
                         val expense = expensesByYear[year] ?: 0.0
-                        val barHeight = (expense / maxExpense * size.height).toFloat()
+                        // Calcula a altura da barra baseada na altura real do gráfico (chartActualHeight)
+                        val barHeightPx = (expense / maxExpense * chartActualHeight.toPx())
+                            .toFloat()
+                            .coerceAtLeast(0f)
+
+                        val barXOffset = index * (barWidth.toPx() + barSpacing.toPx())
+                        val barYOffset = chartActualHeight.toPx() - barHeightPx // Y é de cima para baixo
+
                         drawRoundRect(
                             color = Primary.copy(alpha = 0.2f),
-                            topLeft = Offset(
-                                x = i * (barWidth.toPx() + barSpacing.toPx()),
-                                y = size.height - barHeight
-                            ),
-                            size = androidx.compose.ui.geometry.Size(barWidth.toPx(), barHeight),
+                            topLeft = Offset(x = barXOffset, y = barYOffset),
+                            size = androidx.compose.ui.geometry.Size(barWidth.toPx(), barHeightPx),
                             cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
                         )
-                        // Desenhar o texto do ano centralizado abaixo da barra, usando nativeCanvas
-                        drawContext.canvas.nativeCanvas.apply {
-                            drawText(
-                                textMeasurer = textMeasurer,
-                                text = year,
-                                topLeft = Offset(
-                                    x = i * (barWidth.toPx() + barSpacing.toPx()) + barWidth.toPx() / 2,
-                                    y = size.height + 4.dp.toPx() // Adjust y-position as needed, consider text alignment
-                                ),
-                                TextStyle.Default
-                            )
-                        }
+
+                        // Medir e desenhar o texto do ano usando DrawScope.drawText
+                        val textLayoutResult = textMeasurer.measure(
+                            text = year,
+                            style = yearTextStyle
+                        )
+
+                        val textXOffset = barXOffset + (barWidth.toPx() / 2) - (textLayoutResult.size.width / 2)
+                        val textYOffset = chartActualHeight.toPx() + textPaddingTop.toPx()
+
+                        drawText(
+                            textLayoutResult = textLayoutResult,
+                            topLeft = Offset(x = textXOffset, y = textYOffset)
+                        )
                     }
                 }
             }
