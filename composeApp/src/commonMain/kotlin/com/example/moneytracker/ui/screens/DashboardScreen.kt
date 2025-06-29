@@ -1,5 +1,7 @@
 package com.example.moneytracker.ui.screens
 
+import MoneyTrackerTheme
+import Primary
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -61,6 +63,21 @@ import androidx.compose.ui.semantics.text
 import com.example.moneytracker.util.DateTimeUtil
 import com.example.moneytracker.util.toCurrencyString
 import kotlinx.datetime.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.material3.DividerDefaults.color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PaintingStyle
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import androidx.compose.ui.graphics.nativeCanvas // To get the underlying native canvas if absolutely needed, but prefer DrawScope methods
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +105,10 @@ fun DashboardScreen(
                 title = { Text("Money Tracker") },
                 navigationIcon = {
                     IconButton(onClick = { onDrawerAction() }) {
-                        Icon(painterResource(Res.drawable.ic_menu), contentDescription = "Open menu")
+                        Icon(
+                            painterResource(Res.drawable.ic_menu),
+                            contentDescription = "Open menu"
+                        )
                     }
                 }
             )
@@ -108,9 +128,20 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Cards de resumo
+            SummaryCards(state = state)
+            // Gráfico de barras anual
+            YearlyExpensesBarChart(transactions = state.transactions)
             // Balance Card - Always visible
             BalanceCard(state = state)
-
+            Spacer(modifier = Modifier.height(8.dp))
+            QuickInsightCard(transactions = state.transactions)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "meus cartões",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp)
+            )
             // Tabs
             TabRow(
                 selectedTabIndex = selectedTabIndex,
@@ -585,16 +616,18 @@ fun TransactionsTab(
                         onClick = {
                             if (newCategoryName.isNotBlank()) {
                                 scope.launch {
-                                    categoryViewModel.addCategory(newCategoryName).collect { result ->
-                                        result.onSuccess {
-                                            showAddCategoryDialog = false
-                                            newCategoryName = ""
-                                            showError = false
-                                        }.onFailure { error ->
-                                            errorMessage = "Falha ao adicionar categoria: ${error.message}"
-                                            showError = true
+                                    categoryViewModel.addCategory(newCategoryName)
+                                        .collect { result ->
+                                            result.onSuccess {
+                                                showAddCategoryDialog = false
+                                                newCategoryName = ""
+                                                showError = false
+                                            }.onFailure { error ->
+                                                errorMessage =
+                                                    "Falha ao adicionar categoria: ${error.message}"
+                                                showError = true
+                                            }
                                         }
-                                    }
                                 }
                             }
                         },
@@ -605,7 +638,7 @@ fun TransactionsTab(
                 },
                 dismissButton = {
                     TextButton(
-                        onClick = { 
+                        onClick = {
                             showAddCategoryDialog = false
                             newCategoryName = ""
                             showError = false
@@ -622,10 +655,10 @@ fun TransactionsTab(
             AlertDialog(
                 onDismissRequest = { showDeleteCategoryDialog = null },
                 title = { Text("Excluir Categoria") },
-                text = { 
+                text = {
                     Text(
                         "Tem certeza que deseja excluir a categoria '${category.displayName}'? " +
-                        "Todas as transações desta categoria serão movidas para 'Outros'."
+                                "Todas as transações desta categoria serão movidas para 'Outros'."
                     )
                 },
                 confirmButton = {
@@ -666,7 +699,7 @@ fun TransactionListItem(
 
     ListItem(
         headlineContent = { Text(transaction.description) },
-        supportingContent = { 
+        supportingContent = {
             Column {
                 Text(
                     text = transaction.category.displayName,
@@ -698,7 +731,7 @@ fun TransactionListItem(
                 )
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
-                         painterResource(Res.drawable.ic_close),
+                        painterResource(Res.drawable.ic_close),
                         contentDescription = "Excluir transação",
                         tint = MaterialTheme.colorScheme.error
                     )
@@ -881,8 +914,8 @@ private fun BudgetOverviewTab(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                     painterResource(Res.drawable.ic_add),
-                     contentDescription = "Definir Novo Orçamento",
+                    painterResource(Res.drawable.ic_add),
+                    contentDescription = "Definir Novo Orçamento",
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
@@ -902,7 +935,7 @@ private fun BudgetOverviewTab(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                    Icon(painterResource(Res.drawable.ic_add), contentDescription = null)
+                        Icon(painterResource(Res.drawable.ic_add), contentDescription = null)
                         Text("Definir Novo Orçamento")
                     }
                 }
@@ -975,8 +1008,8 @@ private fun BudgetOverviewCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                     painter = painterResource(Res.drawable.ic_account_balance),
-                     contentDescription = "Categoria do Orçamento",
+                        painter = painterResource(Res.drawable.ic_account_balance),
+                        contentDescription = "Categoria do Orçamento",
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -988,7 +1021,7 @@ private fun BudgetOverviewCard(
                     )
                 }
                 Text(
-                     text = "R$ ${budget.amount.toCurrencyString()}",
+                    text = "R$ ${budget.amount.toCurrencyString()}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -1046,7 +1079,7 @@ private fun BudgetOverviewCard(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                            painter = painterResource(Res.drawable.ic_info),
+                                painter = painterResource(Res.drawable.ic_info),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp)
@@ -1087,5 +1120,136 @@ private fun BudgetDetailRow(
             color = color,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun SummaryCards(state: TransactionState) {
+    val totalExpenses =
+        state.transactions.filter { it.type == TransactionType.EXPENSE }.sumOf { it.amount }
+    val transactionCount = state.transactions.size
+    val monthlyChange = calculateMonthlyChange(state.transactions)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        SummaryCard(
+            icon = painterResource(Res.drawable.ic_close),
+            label = "Total expenses",
+            value = "R$ ${totalExpenses.toCurrencyString()}"
+        )
+        SummaryCard(
+            icon = painterResource(Res.drawable.ic_event),
+            label = "No. of transactions",
+            value = "$transactionCount"
+        )
+        SummaryCard(
+            icon = painterResource(Res.drawable.ic_trending_up),
+            label = "Monthly change",
+            value = "${if (monthlyChange >= 0) "+" else ""}${monthlyChange}%"
+        )
+    }
+}
+
+@Composable
+private fun SummaryCard(
+    icon: androidx.compose.ui.graphics.painter.Painter,
+    label: String,
+    value: String
+) {
+    Card(
+        modifier = Modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(label, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    value,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+            }
+        }
+    }
+}
+
+private fun calculateMonthlyChange(transactions: List<Transaction>): Double {
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    val thisMonth = now.monthNumber
+    val thisYear = now.year
+    val lastMonth = if (thisMonth == 1) 12 else thisMonth - 1
+    val lastMonthYear = if (thisMonth == 1) thisYear - 1 else thisYear
+    val thisMonthTotal = transactions.filter {
+        it.type == TransactionType.EXPENSE &&
+                it.date.take(7) == "${thisMonth - thisYear}" //"%04d-%02d".format(thisYear, thisMonth)
+    }.sumOf { it.amount }
+    val lastMonthTotal = transactions.filter {
+        it.type == TransactionType.EXPENSE &&
+                it.date.take(7) == "${lastMonth - lastMonth}"//"%04d-%02d".format(lastMonthYear, lastMonth)
+    }.sumOf { it.amount }
+    return if (lastMonthTotal == 0.0) 0.0 else ((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100
+}
+
+@Composable
+private fun YearlyExpensesBarChart(transactions: List<Transaction>, modifier: Modifier = Modifier) {
+    val expensesByYear = transactions.filter { it.type == TransactionType.EXPENSE }
+        .groupBy { it.date.take(4) }
+        .mapValues { it.value.sumOf { t -> t.amount } }
+    val years = expensesByYear.keys.sorted()
+    val maxExpense = expensesByYear.values.maxOrNull()?.takeIf { it > 0 } ?: 1.0
+    val barWidth: Dp = 32.dp
+    val chartHeight: Dp = 120.dp
+    val barSpacing: Dp = 16.dp
+    val textMeasurer = rememberTextMeasurer()
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Yearly expenses", style = MaterialTheme.typography.titleMedium)
+            Spacer(modifier = Modifier.height(12.dp))
+            Box(modifier = Modifier.height(chartHeight).fillMaxWidth()) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    years.forEachIndexed { i, year ->
+                        val expense = expensesByYear[year] ?: 0.0
+                        val barHeight = (expense / maxExpense * size.height).toFloat()
+                        drawRoundRect(
+                            color = Primary.copy(alpha = 0.2f),
+                            topLeft = Offset(
+                                x = i * (barWidth.toPx() + barSpacing.toPx()),
+                                y = size.height - barHeight
+                            ),
+                            size = androidx.compose.ui.geometry.Size(barWidth.toPx(), barHeight),
+                            cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
+                        )
+                        // Desenhar o texto do ano centralizado abaixo da barra, usando nativeCanvas
+                        drawContext.canvas.nativeCanvas.apply {
+                            drawText(
+                                textMeasurer = textMeasurer,
+                                text = year,
+                                topLeft = Offset(
+                                    x = i * (barWidth.toPx() + barSpacing.toPx()) + barWidth.toPx() / 2,
+                                    y = size.height + 4.dp.toPx() // Adjust y-position as needed, consider text alignment
+                                ),
+                                TextStyle.Default
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
